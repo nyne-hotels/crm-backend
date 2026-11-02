@@ -1,0 +1,139 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792572555009,
+      "tag": "0000_init_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792572568017,
+      "tag": "0001_functions_triggers_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792586736350,
+      "tag": "0002_auth_and_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792994462858,
+      "tag": "0003_three_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792995058712,
+      "tag": "0004_contact_overview_country",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792999347108,
+      "tag": "0005_stay_status_and_imports",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792999362750,
+      "tag": "0006_stay_status_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793005037439,
+      "tag": "0007_tags_retire_and_note_edits",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793005041251,
+      "tag": "0008_guest_knowledge_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793007821131,
+      "tag": "0009_consent_and_marketing",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793007860892,
+      "tag": "0010_consent_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793016515887,
+      "tag": "0011_not_duplicates",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793016521347,
+      "tag": "0012_merge_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793019497351,
+      "tag": "0013_leads_and_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793019522117,
+      "tag": "0014_lead_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793085327365,
+      "tag": "0015_feedback_follow_up",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793085338951,
+      "tag": "0016_feedback_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793183068300,
+      "tag": "0017_contact_imports",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793183075951,
+      "tag": "0018_contact_import_rules",
+      "breakpoints": true
+    }
+  ]
+}

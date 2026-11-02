@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.env
+*.tsbuildinfo
+
+# Guest data spreadsheets (real contact PII) - keep out of git
+docs/development/*.xlsx

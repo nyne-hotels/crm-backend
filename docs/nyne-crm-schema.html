@@ -1,0 +1,372 @@
+<title>Nyne CRM Schema</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: relationship map on top (scrolls sideways on phones), table cards grouped by area below. */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --ink:#17201d; --muted:#5b6762; --line:#d5dcd8; --soft:#e8ecea;
+  --people:#0f766e; --hotels:#a35a08; --sales:#4a3fbf; --admin:#5d6b7a;
+  --people-bg:#e3f1ef; --hotels-bg:#f6ecdf; --sales-bg:#ebe9fa; --admin-bg:#e9edf1;
+  --edge:#9aa7a1; --focus:#d1495b;
+  --f-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121816; --surface:#1a2220; --ink:#e6ece9; --muted:#9aa8a2; --line:#2e3a36; --soft:#222c29;
+  --people:#4fc3b4; --hotels:#e3a35a; --sales:#a59cf5; --admin:#a3b1c0;
+  --people-bg:#173430; --hotels-bg:#3a2a17; --sales-bg:#262248; --admin-bg:#242c35;
+  --edge:#55645e; --focus:#f2788a; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#1a2220; --ink:#e6ece9; --muted:#9aa8a2; --line:#2e3a36; --soft:#222c29;
+  --people:#4fc3b4; --hotels:#e3a35a; --sales:#a59cf5; --admin:#a3b1c0;
+  --people-bg:#173430; --hotels-bg:#3a2a17; --sales-bg:#262248; --admin-bg:#242c35;
+  --edge:#55645e; --focus:#f2788a; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-sans);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+header{display:flex;flex-direction:column;gap:8px}
+.eyebrow{font:600 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(26px,4vw,36px)/1.15 var(--f-sans);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.lede{margin:0;color:var(--muted);max-width:68ch}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font:500 13px/1.4 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink);font-weight:600}
+h2{font:600 19px/1.3 var(--f-sans);margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+/* map */
+.mapbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.mapbox svg{display:block;width:100%;min-width:1060px;height:auto}
+.node rect{stroke-width:1.5;cursor:pointer}
+.node text{font-family:var(--f-mono);pointer-events:none}
+.node .nm{font-size:14px;font-weight:600}
+.node .ct{font-size:11.5px}
+.edge{fill:none;stroke:var(--edge);stroke-width:1.4;transition:opacity .15s,stroke .15s}
+.edge.staff{stroke-dasharray:4 4;opacity:0}
+svg.focus .edge{opacity:.12}
+svg.focus .edge.on{opacity:1;stroke:var(--focus);stroke-width:2}
+svg.focus .node{opacity:.35}
+svg.focus .node.on{opacity:1}
+.node:focus-visible rect{stroke:var(--focus);stroke-width:3}
+.node:focus{outline:none}
+.maphint{padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);min-height:42px}
+.maphint b{color:var(--ink);font-family:var(--f-mono);font-weight:600}
+
+/* groups + cards */
+.group{display:flex;flex-direction:column;gap:14px}
+.ghead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ghead .bar{width:4px;align-self:stretch;border-radius:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0;scroll-margin-top:16px}
+.card.flash{box-shadow:0 0 0 3px var(--focus)}
+.chead{padding:12px 14px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.ctop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.tname{font:600 15.5px/1.3 var(--f-mono)}
+.rows{font:500 12px/1 var(--f-mono);padding:5px 8px;border-radius:99px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.purpose{font-size:13.5px;color:var(--muted);margin:0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:5px 14px;border-top:1px solid var(--soft);vertical-align:top}
+tr:first-child td{border-top:0}
+td.c{font-family:var(--f-mono);font-weight:500;white-space:nowrap}
+td.t{font-family:var(--f-mono);color:var(--muted);font-size:12px;white-space:nowrap}
+td.n{color:var(--muted);font-size:12.5px;width:100%}
+.b{display:inline-block;font:600 10.5px/1 var(--f-mono);padding:3px 5px;border-radius:4px;margin-right:4px;letter-spacing:.03em;vertical-align:1px}
+.pk{background:var(--ink);color:var(--surface)}
+.uq{border:1px solid var(--muted);color:var(--muted)}
+.fk{background:var(--soft);color:var(--ink);border:0;cursor:pointer;font:600 11px/1 var(--f-mono);padding:4px 6px;border-radius:4px}
+.fk:hover,.fk:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.vals{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);display:block;margin-top:2px;word-break:break-word}
+.tablewrap{overflow-x:auto}
+tr.audit td{background:var(--soft);font-style:italic}
+
+/* rules & views */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.item{display:flex;flex-direction:column;gap:2px}
+.item code{font:600 13.5px/1.4 var(--f-mono)}
+.item p{margin:0;font-size:13.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){.edge{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">PostgreSQL · schema.sql + seed.sql</span>
+    <h1>Nyne Hotels CRM database</h1>
+    <p class="lede">21 tables, linked through <code>contacts</code>. Click any table on the map to highlight its links and jump to its columns. Row counts show what the seed file loads from the 8-hotel workbook.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="group" aria-labelledby="map-h">
+    <div>
+      <h2 id="map-h">How the tables connect</h2>
+      <p class="sub">Each line is a foreign key, drawn from the table that holds it to the table it points at. Staff links, and the link from companies to countries, are hidden until you select one of those tables.</p>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="mapbox">
+      <svg id="map" viewBox="0 0 1250 570" role="img" aria-label="Diagram of the CRM tables and their links"></svg>
+      <div class="maphint" id="hint">Select a table to see what it links to.</div>
+    </div>
+  </section>
+
+  <div id="groups" style="display:flex;flex-direction:column;gap:36px"></div>
+
+  <section class="two" aria-label="Automatic rules and views">
+    <div class="panel">
+      <h2>Automatic rules</h2>
+      <div class="item"><code>Recording a stay</code><p>Moves the person forward: 1 stay makes them “stayed”, 2 or more “repeat guest”. A lead becomes a guest. Never moves anyone backwards, never touches agents or influencers.</p></div>
+      <div class="item"><code>Do not contact</code><p>Setting a contact to do-not-contact switches every one of their consents to opted out.</p></div>
+      <div class="item"><code>merge_contacts(keep, remove)</code><p>Moves every stay, note, date, email, phone, tag and lead to the kept record, drops a stay both records share, keeps the strictest consent so an opt-out is never lost, logs the merge, then deletes the duplicate. All or nothing.</p></div>
+      <div class="item"><code>Nights</code><p>Worked out from arrival and departure dates on each stay.</p></div>
+      <div class="item"><code>Audit columns</code><p>Every table records created, updated and deleted (when and by whom), filled in automatically from the logged-in staff member. Contact tags and the merge log only record created.</p></div>
+      <div class="item"><code>Soft delete</code><p>Deleting sets <code>deleted_at</code>. The row stays for history and every view hides it.</p></div>
+    </div>
+    <div class="panel">
+      <h2>Ready-made views</h2>
+      <div class="item"><code>contact_overview</code><p>One line per person: type, stage, primary email and phone, hotels, number of stays, last stay, email consent, tags.</p></div>
+      <div class="item"><code>marketing_email_list</code><p>People you may email right now: opted in, active, with a usable personal email. 900 people after seeding.</p></div>
+      <div class="item"><code>possible_duplicates</code><p>Pairs of contacts with the same name, email or phone, for staff to review before merging. 201 pairs after seeding.</p></div>
+      <div class="item"><code>upcoming_special_dates</code><p>Occasions in the next 60 days, with days to go, years married or age turning (when the year is known), and email consent.</p></div>
+      <div class="item"><code>feedback_overview</code><p>Every feedback response with guest, hotel and stay dates, newest first. Ratings of 1–2 are flagged for follow-up.</p></div>
+      <div class="item"><code>employee_feedback</code><p>Every guest comment about an employee, with hotel, guest, praise or criticism, and the stay rating, newest first.</p></div>
+      <div class="item"><code>employee_feedback_summary</code><p>Per employee: how many times guests praised or criticised them, overall and in the last 90 days.</p></div>
+      <div class="item"><code>property_ratings</code><p>Per hotel: number of responses, average rating overall and for the last 90 days, and how many low ratings.</p></div>
+      <div class="item"><code>property_guest_counts</code><p>Guests, stay rows and dated stays per hotel.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const G = {
+  people:{label:'People', note:'Who each person is, how to reach them, and what they agreed to.'},
+  hotels:{label:'Hotels & stays', note:'The 8 hotels, every visit, what guests like, and what they said about their stay.'},
+  sales:{label:'Sales & activity', note:'Agents, leads and every conversation. Empty at launch except companies.'},
+  admin:{label:'Admin & audit', note:'Who uses the CRM, merges, and what needs fixing.'}
+};
+// [column, type, flags, note]  flags: pk | uq | fk:table | req
+const T = [
+ {n:'contacts', g:'people', rows:6333, p:'One row per person: guests, leads, agent contacts and influencers.', c:[
+  ['id','bigint','pk',''],['first_name','text','',''],['last_name','text','','Everything after the first word, e.g. De Silva'],
+  ['contact_type','text','req','',['guest','lead','agent_contact','influencer']],
+  ['lifecycle_stage','text','req','',['lead','enquired','booked','stayed','repeat_guest','stayed_hotel_unknown','agent_contact','influencer']],
+  ['market','text','','',['local','foreign','unknown']],
+  ['country_code','char(2)','fk:countries','Picked from the list, never typed'],['company_id','bigint','fk:companies',''],['designation','text','',''],
+  ['vip_reason','text','','Why they are VIP / industry'],
+  ['status','text','req','',['active','do_not_contact']]]},
+ {n:'contact_methods', g:'people', rows:8608, p:'Emails and phones. Several per person; one primary of each kind.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts req',''],['kind','text','req','',['email','phone']],
+  ['value','text','req','Unique per person and kind'],['is_primary','boolean','',''],
+  ['is_shared','boolean','','Agent / office / family address: never marketed, never matched on'],
+  ['is_whatsapp','boolean','','Blank until known'],
+  ['status','text','','',['valid','unverified','bounced','invalid']],
+  ]},
+ {n:'consents', g:'people', rows:6333, p:'Marketing permission per person and channel.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts req','One row per person and channel'],
+  ['channel','text','req','',['email','whatsapp']],['status','text','req','902 opted in at launch',['opted_in','opted_out','not_opted_in','unknown']],
+  ['source','text','','wix, check_in_form …'],['evidence','text','','Wording shown or original value'],['given_at','timestamptz','','When the person gave or withdrew permission']]},
+ {n:'special_dates', g:'people', rows:0, p:'Birthdays, anniversaries and other occasions. As many per person as needed.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts req',''],
+  ['occasion','text','req','',['birthday','wedding_anniversary','partner_birthday','child_birthday','other']],
+  ['label','text','','Partner’s or child’s name, or what “other” is'],
+  ['month','smallint','req','1–12'],['day','smallint','req','1–31; impossible dates are rejected'],
+  ['year','smallint','','Blank if unknown; used for “turning 40” or “10 years married”']]},
+ {n:'countries', g:'people', rows:249, p:'Fixed list of countries so names are never mistyped.', c:[
+  ['code','char(2)','pk','ISO code: LK, GB, IN …'],['name','text','uq req',''],['dial_code','text','','+94, +44 … helps match phones to countries']]},
+ {n:'tags', g:'people', rows:2, p:'Labels you can add freely.', c:[
+  ['id','bigint','pk',''],['name','text','uq req','VIP / industry, Friends & family']]},
+ {n:'contact_tags', g:'people', rows:16, p:'Which person has which tag.', c:[
+  ['contact_id','bigint','pk fk:contacts',''],['tag_id','bigint','pk fk:tags','']]},
+
+ {n:'properties', g:'hotels', rows:8, p:'The hotels. Stafford Bungalow is set up with no guests yet.', c:[
+  ['id','text','pk','P01 … P08'],['name','text','uq req',''],['location','text','',''],['property_type','text','',''],
+  ['web_url','text','',''],['is_active','boolean','','']]},
+ {n:'occasions', g:'hotels', rows:12, p:'Pick-list for why someone is staying or asking about a stay: honeymoon, birthday, business trip …', c:[
+  ['id','bigint','pk',''],['name','text','uq req',''],['sort_order','smallint','','Order in the drop-down']]},
+ {n:'stays', g:'hotels', rows:4657, p:'One row per visit. Today mostly “has stayed here” until the PMS re-export adds dates.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts req',''],
+  ['property_id','text','fk:properties req',''],['arrival_date','date','',''],['departure_date','date','',''],
+  ['nights','integer','','Calculated from the dates'],
+  ['booking_reference','text','','From the booking system; unique per hotel, so a booking can’t be loaded twice'],['room_type','text','','As given by the booking system'],['adults / children','smallint','',''],['room_revenue','numeric','',''],['currency','char(3)','',''],
+  ['channel','text','','',['direct','travel_agent','ota','owner_guest','website','walk_in','online_unclear','mixed','unknown']],
+  ['booking_company_id','bigint','fk:companies','Agent or OTA that booked'],
+  ['occasion_id','bigint','fk:occasions','Picked from the list']]},
+ {n:'feedback', g:'hotels', rows:0, p:'The guest’s answer to the post-stay feedback form: a 1–5 rating and a written review. One per stay.', c:[
+  ['id','bigint','pk',''],['stay_id','bigint','fk:stays req','The guest and hotel come from the stay; one feedback per stay'],
+  ['rating','smallint','','1 = poor … 5 = excellent'],['review','text','','The guest’s written comments'],
+  ['submitted_at','timestamptz','req','When the guest sent the form']]},
+ {n:'employee_mentions', g:'hotels', rows:0, p:'A guest praising or criticising a specific employee in their feedback. One row per employee mentioned.', c:[
+  ['id','bigint','pk',''],['feedback_id','bigint','fk:feedback req',''],
+  ['employee_id','bigint','fk:employees','Linked by staff; blank until they know who the guest meant'],
+  ['name_as_written','text','','What the guest wrote, e.g. “Kamal the driver”'],
+  ['sentiment','text','req','',['positive','negative']],['comment','text','','What the guest said about them']]},
+ {n:'employees', g:'hotels', rows:0, p:'Everyone who works at the hotels: chefs, drivers, butlers … Most never log into the CRM.', c:[
+  ['id','bigint','pk',''],['first_name','text','req',''],['last_name','text','',''],
+  ['property_id','text','fk:properties','Blank = works across the group'],
+  ['department','text','req','',['front_office','housekeeping','food_beverage','kitchen','spa','transport','activities','maintenance','management','other']],
+  ['job_title','text','','Butler, Head Chef, Driver …'],['staff_user_id','bigint','fk:staff_users','Set if they also use the CRM'],
+  ['is_active','boolean','','Off once they leave; their feedback stays']]},
+ {n:'preferences', g:'hotels', rows:94, p:'What a guest likes and dislikes. Other remarks go in notes.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts req',''],['kind','text','req','',['like','dislike']],
+  ['category','text','','',['food_drink','dietary_health','room','activity','occasion','background','other']],
+  ['body','text','req',''],['stay_id','bigint','fk:stays','The stay also tells you the hotel']]},
+
+ {n:'companies', g:'sales', rows:45, p:'Travel agents, DMCs, OTAs and corporates.', c:[
+  ['id','bigint','pk',''],['name','text','uq req',''],
+  ['company_type','text','','',['travel_agent','inbound_dmc','outbound_agent','ota','corporate','media','other']],
+  ['country_code','char(2)','fk:countries',''],['address','text','',''],['website','text','',''],['commission_notes','text','',''],
+  ['account_owner_id','bigint','fk:staff_users',''],['status','text','','',['active','prospect','dormant']]]},
+ {n:'leads', g:'sales', rows:0, p:'Each time someone shows interest, from first message to booked or lost.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts req',''],
+  ['source','text','req','',['website_form','whatsapp','instagram','phone','email','agent','walk_in','ota_message','other']],
+  ['property_id','text','fk:properties',''],['check_in / check_out','date','',''],
+  ['adults / children','smallint','',''],['occasion_id','bigint','fk:occasions',''],
+  ['status','text','req','',['new','contacted','quoted','booked','lost']],
+  ['lost_reason','text','','',['price','dates_unavailable','went_elsewhere','no_response','plans_changed','other']],
+  ['quoted_value','numeric','',''],['owner_id','bigint','fk:staff_users',''],['follow_up_at','timestamptz','',''],
+  ['stay_id','bigint','fk:stays','Set when it converts']]},
+ {n:'interactions', g:'sales', rows:0, p:'Emails, WhatsApps, calls, visits and Instagram DMs.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts','Person, company, or both'],['company_id','bigint','fk:companies',''],
+  ['kind','text','req','',['email','whatsapp','call','meeting','visit','instagram_dm']],
+  ['direction','text','','',['inbound','outbound']],['occurred_at','timestamptz','',''],['staff_id','bigint','fk:staff_users',''],
+  ['lead_id','bigint','fk:leads',''],['summary','text','','']]},
+
+ {n:'notes', g:'sales', rows:131, p:'Every staff remark as its own row, with who wrote it and when. Always about a person or company; can also point to a stay or lead.', c:[
+  ['id','bigint','pk',''],['body','text','req',''],['contact_id','bigint','fk:contacts','Filled from the stay or lead if left blank'],
+  ['company_id','bigint','fk:companies','A person or a company is required'],['stay_id','bigint','fk:stays',''],['lead_id','bigint','fk:leads','']]},
+ {n:'staff_users', g:'admin', rows:0, p:'Everyone who uses the CRM, with a role that controls what they see.', c:[
+  ['id','bigint','pk',''],['first_name','text','req',''],['last_name','text','',''],['email','text','uq req',''],
+  ['role','text','req','',['admin','management','marketing']],
+  ['property_id','text','fk:properties','Home hotel; blank = whole group'],['is_active','boolean','','']]},
+ {n:'contact_merges', g:'admin', rows:0, p:'Log of duplicates combined. The duplicate is deleted; this keeps a snapshot of it so a wrong merge can be rebuilt.', c:[
+  ['id','bigint','pk',''],['kept_contact_id','bigint','fk:contacts','The record that stayed'],
+  ['removed_contact_id','bigint','req','The record that was deleted'],
+  ['removed_snapshot','jsonb','req','Its details, emails, phones, consents, tags and any duplicate stays'],
+  ['moved_rows','jsonb','req','Ids of every stay, note, date, lead … that moved'],
+  ['note','text','','']]},
+ {n:'data_issues', g:'admin', rows:0, p:'Review queue for bad emails, phones and other fixes.', c:[
+  ['id','bigint','pk',''],['contact_id','bigint','fk:contacts',''],['field','text','req',''],['raw_value','text','',''],
+  ['issue','text','req',''],['suggested_fix','text','',''],['status','text','','',['open','fixed','ignored']],
+  ['resolved_by','bigint','fk:staff_users',''],['resolved_at','timestamptz','','']]}
+];
+const byName = Object.fromEntries(T.map(t=>[t.n,t]));
+const CREATED_ONLY = ['contact_tags','contact_merges'];
+const auditRow = n => `<tr class="audit"><td class="c">${CREATED_ONLY.includes(n)?'created_at · created_by':'created · updated · deleted'}</td><td class="t">${CREATED_ONLY.includes(n)?'':'_at · _by'}</td><td class="n">Audit, filled automatically${CREATED_ONLY.includes(n)?' (never edited)':''}</td></tr>`;
+const fmt = n => n.toLocaleString('en-US');
+
+// header stats
+document.getElementById('stats').innerHTML =
+  `<span><b>${T.length}</b> tables</span><span><b>9</b> views</span><span><b>${fmt(T.reduce((a,t)=>a+t.rows,0))}</b> rows seeded</span><span><b>8</b> hotels</span>`;
+
+// legend
+document.getElementById('legend').innerHTML = Object.entries(G).map(([k,v])=>
+  `<span><i class="dot" style="background:var(--${k})"></i>${v.label}</span>`).join('');
+
+// ---------- map ----------
+const W=180,H=46;
+const POS = {
+  contact_methods:[20,20], consents:[20,125], special_dates:[20,230], countries:[20,335], data_issues:[20,480],
+  tags:[270,20], contact_tags:[270,110], contacts:[270,250,64], notes:[270,440],
+  preferences:[530,40], stays:[530,190], leads:[530,350], interactions:[530,490],
+  properties:[790,40], feedback:[790,130], employee_mentions:[1050,130], employees:[1050,40], occasions:[790,222], companies:[790,330], contact_merges:[790,425], staff_users:[790,505]
+};
+// edges: [from (holds FK), to]
+const E = [];
+T.forEach(t=>t.c.forEach(col=>{
+  (col[2].match(/fk:(\w+)/g)||[]).forEach(m=>{
+    const to=m.slice(3); if(to!==t.n) E.push([t.n,to]);
+  });
+}));
+const svg = document.getElementById('map'), NS='http://www.w3.org/2000/svg';
+const box = n => { const [x,y,h=H]=POS[n]; return {x,y,w:W,h,cx:x+W/2,cy:y+h/2}; };
+function path(a,b){
+  const A=box(a),B=box(b);
+  if (Math.abs(A.cx-B.cx) > 150){
+    const s = A.cx<B.cx ? [A.x+A.w,A.cy] : [A.x,A.cy];
+    const e = A.cx<B.cx ? [B.x,B.cy] : [B.x+B.w,B.cy];
+    const mx=(s[0]+e[0])/2;
+    return `M${s[0]},${s[1]} C${mx},${s[1]} ${mx},${e[1]} ${e[0]},${e[1]}`;
+  }
+  const s = A.cy<B.cy ? [A.cx,A.y+A.h] : [A.cx,A.y];
+  const e = A.cy<B.cy ? [B.cx,B.y] : [B.cx,B.y+B.h];
+  const my=(s[1]+e[1])/2;
+  return `M${s[0]},${s[1]} C${s[0]},${my} ${e[0]},${my} ${e[0]},${e[1]}`;
+}
+const defs=document.createElementNS(NS,'defs');
+defs.innerHTML=`<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--edge)"/></marker>`;
+svg.appendChild(defs);
+const edgeEls = E.map(([a,b])=>{
+  const p=document.createElementNS(NS,'path');
+  p.setAttribute('d',path(a,b)); p.setAttribute('class','edge'+((a==='staff_users'||b==='staff_users'||(a==='companies'&&b==='countries')||(a==='employees'&&b==='properties'))?' staff':''));
+  p.setAttribute('marker-end','url(#ar)'); p.dataset.a=a; p.dataset.b=b; svg.appendChild(p); return p;
+});
+const nodeEls = {};
+Object.keys(POS).forEach(n=>{
+  const t=byName[n], b=box(n), g=document.createElementNS(NS,'g');
+  g.setAttribute('class','node'); g.setAttribute('tabindex','0'); g.setAttribute('role','button');
+  g.setAttribute('aria-label',`${n}, ${fmt(t.rows)} rows`);
+  const main = n==='contacts';
+  g.innerHTML=`<rect x="${b.x}" y="${b.y}" width="${W}" height="${b.h}" rx="7"
+      style="fill:var(--${t.g}-bg);stroke:var(--${t.g})" ${main?'stroke-width="2.5"':''}></rect>
+    <text class="nm" x="${b.x+12}" y="${b.y+(main?28:20)}" style="fill:var(--ink)${main?';font-size:16px':''}">${n}</text>
+    <text class="ct" x="${b.x+12}" y="${b.y+(main?47:36)}" style="fill:var(--muted)">${t.rows?fmt(t.rows)+' rows':'empty'} · ${t.c.length} cols</text>`;
+  g.addEventListener('click',()=>select(n,true));
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(n,true);}});
+  g.addEventListener('mouseenter',()=>select(n,false));
+  g.addEventListener('mouseleave',()=>{ if(!pinned) clear(); else select(pinned,false); });
+  svg.appendChild(g); nodeEls[n]=g;
+});
+let pinned=null;
+const hint=document.getElementById('hint');
+function clear(){ svg.classList.remove('focus'); edgeEls.forEach(e=>{e.classList.remove('on'); if(e.classList.contains('staff')) e.style.opacity='';});
+  Object.values(nodeEls).forEach(g=>g.classList.remove('on')); hint.innerHTML='Select a table to see what it links to.'; }
+function select(n, pin){
+  clear(); svg.classList.add('focus'); nodeEls[n].classList.add('on');
+  const out=[], inn=[];
+  edgeEls.forEach(e=>{
+    if(e.dataset.a===n||e.dataset.b===n){ e.classList.add('on'); if(e.classList.contains('staff')) e.style.opacity='1';
+      const o=e.dataset.a===n?e.dataset.b:e.dataset.a; nodeEls[o].classList.add('on');
+      (e.dataset.a===n?out:inn).push(o); }
+  });
+  hint.innerHTML=`<b>${n}</b> — ${byName[n].p}`+
+    (out.length?` Points to: <b>${[...new Set(out)].join(', ')}</b>.`:'')+
+    (inn.length?` Referenced by: <b>${[...new Set(inn)].join(', ')}</b>.`:'');
+  if(pin){ pinned=n; jump(n); }
+}
+function jump(n){
+  const el=document.getElementById('t-'+n); if(!el) return;
+  el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'start'});
+  el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1400);
+}
+
+// ---------- cards ----------
+const groups=document.getElementById('groups');
+Object.entries(G).forEach(([k,v])=>{
+  const sec=document.createElement('section'); sec.className='group';
+  sec.innerHTML=`<div class="ghead"><span class="bar" style="background:var(--${k})"></span><div><h2>${v.label}</h2><p class="sub">${v.note}</p></div></div><div class="grid"></div>`;
+  const grid=sec.querySelector('.grid');
+  T.filter(t=>t.g===k).forEach(t=>{
+    const card=document.createElement('article'); card.className='card'; card.id='t-'+t.n;
+    const rows=t.c.map(([c,ty,fl,note,vals])=>{
+      let badges='';
+      if(/\bpk\b/.test(fl)) badges+='<span class="b pk">PK</span>';
+      if(/\buq\b/.test(fl)) badges+='<span class="b uq">UNIQUE</span>';
+      (fl.match(/fk:(\w+)/g)||[]).forEach(m=>{const to=m.slice(3); badges+=`<button class="fk" data-to="${to}" type="button">→ ${to}</button> `;});
+      if(/\breq\b/.test(fl)) badges+='<span class="b uq">REQUIRED</span>';
+      return `<tr><td class="c">${c}</td><td class="t">${ty}</td><td class="n">${badges}${note?`<span>${note}</span>`:''}${vals?`<span class="vals">${vals.join(' · ')}</span>`:''}</td></tr>`;
+    }).join('');
+    card.innerHTML=`<div class="chead"><div class="ctop"><span class="tname">${t.n}</span>
+      <span class="rows" style="background:var(--${k}-bg);color:var(--${k})">${t.rows?fmt(t.rows)+' rows':'empty'}</span></div>
+      <p class="purpose">${t.p}</p></div><div class="tablewrap"><table>${rows}${auditRow(t.n)}</table></div>`;
+    grid.appendChild(card);
+  });
+  groups.appendChild(sec);
+});
+groups.addEventListener('click',e=>{const b=e.target.closest('.fk'); if(b) jump(b.dataset.to);});
+</script>
