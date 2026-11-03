@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, countryCodes, yesNo } from '../common/filters.js';
+import { anyOf, countryCodes, fieldFilters, yesNo } from '../common/filters.js';
 import { COMPANY_STATUSES, COMPANY_TYPES } from '../db/schema/index.js';
 import { createGuestSchema } from '../guests/guests.schemas.js';
 
@@ -47,6 +47,7 @@ export const listCompaniesSchema = z.object({
   bookedLastYear: yesNo, // stays in the last 12 months (arrived since, or still to come)
   lastContact: z.enum(['30', '90', 'over_90', 'never']).optional(), // the last conversation with it or its people
   openLeads: yesNo, // its people have open leads
+  ...fieldFilters(['country', 'address', 'website', 'commissionNotes']),
 });
 export type ListCompanies = z.infer<typeof listCompaniesSchema>;
 

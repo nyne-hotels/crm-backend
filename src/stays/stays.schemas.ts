@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, countryCodes, filterAmount, filterCount, filterDay, ids, rangesInOrder, yesNo } from '../common/filters.js';
+import { anyOf, countryCodes, filterAmount, filterCount, filterDay, ids, fieldFilters, rangesInOrder, yesNo } from '../common/filters.js';
 import { LIFECYCLE_STAGES, MARKETS, STAY_CHANNELS, STAY_STATUSES } from '../db/schema/index.js';
 import { createGuestSchema } from '../guests/guests.schemas.js';
 import { NEW_STAY_STATUSES } from './stay-rules.js';
@@ -69,6 +69,23 @@ export type QuickView = (typeof QUICK_VIEWS)[number];
 
 export const STAYS_PAGE_SIZE = 50;
 
+// "Filled in" / "Missing" on the stay, and the guest's details for reaching
+// them. agent: missing = booked through a travel agent or OTA with no agent
+// chosen; filled in = an agent chosen. remarks = special requests.
+export const STAY_FIELDS = [
+  'arrival',
+  'departure',
+  'bookingReference',
+  'roomType',
+  'guests',
+  'revenue',
+  'agent',
+  'remarks',
+  'guestName',
+  'guestEmail',
+  'guestPhone',
+] as const;
+
 export const listStaysSchema = z
   .object({
     q: trimmed.max(100).optional(), // guest name or booking reference
@@ -93,12 +110,12 @@ export const listStaysSchema = z
     currency: anyOf(trimmed.toUpperCase().length(3)),
     revenueMin: filterAmount, // room revenue, in the stay's own currency
     revenueMax: filterAmount,
-    remarks: yesNo, // has special requests from the booking system
     feedback: z.enum(['given', 'low', 'none']).optional(), // low = a 1 or 2 star rating
     fromLead: yesNo, // a lead converted into this stay
     guestStage: anyOf(z.enum(LIFECYCLE_STAGES)),
     market: anyOf(z.enum(MARKETS)), // the guest's market
     country: countryCodes, // the guest's country
+    ...fieldFilters(STAY_FIELDS),
     sort: z.enum(['arrival', 'departure']).optional(), // default depends on the quick view
     order: z.enum(['asc', 'desc']).optional(),
     page: z.coerce.number().int().min(1).default(1),

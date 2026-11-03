@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, yesNo } from '../common/filters.js';
+import { anyOf, fieldFilters, yesNo } from '../common/filters.js';
 import { LIFECYCLE_STAGES, PREFERENCE_CATEGORIES, PREFERENCE_KINDS, SPECIAL_DATE_OCCASIONS } from '../db/schema/index.js';
 
 const trimmed = z.string().trim();
@@ -63,6 +63,7 @@ export const listUpcomingSchema = z.object({
   nextStay: yesNo, // booked to come
   stage: anyOf(z.enum(LIFECYCLE_STAGES)),
   milestone: yesNo, // a round number: 5th, 10th, 40th …
-  yearKnown: yesNo, // so the age or years married can be shown
+  // label = whose birthday, or what an "other" occasion is; year = so the age or years married show
+  ...fieldFilters(['label', 'year', 'guestEmail', 'guestPhone']),
 });
 export type ListUpcoming = z.infer<typeof listUpcomingSchema>;

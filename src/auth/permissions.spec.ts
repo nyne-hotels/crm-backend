@@ -3,9 +3,9 @@ import { can, ROLE_PERMISSIONS } from './permissions.js';
 // The table in Module 1 → "Roles and what they can do".
 describe('role permissions', () => {
   const table = {
-    admin: ['edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit'],
-    management: ['edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'none'],
-    marketing: ['view', 'edit', 'none', 'view', 'view', 'view', 'none', 'edit', 'none', 'none'],
+    admin: ['edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit'],
+    management: ['edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'none'],
+    marketing: ['view', 'edit', 'none', 'view', 'view', 'view', 'none', 'edit', 'view', 'none', 'none'],
   } as const;
   const areas = [
     'guests',
@@ -16,6 +16,7 @@ describe('role permissions', () => {
     'feedback',
     'employees',
     'marketingExport',
+    'campaigns',
     'mergeGuests',
     'settings',
   ] as const;

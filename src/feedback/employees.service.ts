@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, desc, eq, ilike, isNotNull, isNull, not, or, sql, type SQL } from 'drizzle-orm';
 import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, updater } from '../common/audit.js';
-import { betweenTimes, inList, whenYesNo } from '../common/filters.js';
+import { betweenTimes, blank, inList, whenFields, whenYesNo } from '../common/filters.js';
 import { chunks, likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import {
@@ -54,7 +54,6 @@ export class EmployeesService {
     const praised = sql`coalesce(${s.positive90Days}, 0) > 0`;
     const criticised = sql`coalesce(${s.negative90Days}, 0) > 0`;
     conditions.push(
-      whenYesNo(filter.login, isNotNull(employees.staffUserId)),
       {
         praised,
         criticised,
@@ -63,6 +62,11 @@ export class EmployeesService {
         all: undefined,
       }[filter.recent ?? 'all'],
       betweenTimes(s.lastMentioned, filter.lastMentionedFrom, filter.lastMentionedTo),
+      whenFields(filter, {
+        lastName: blank(employees.lastName),
+        jobTitle: blank(employees.jobTitle),
+        login: isNull(employees.staffUserId),
+      }),
     );
     return this.db
       .select({

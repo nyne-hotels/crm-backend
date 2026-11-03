@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, softDelete, updater } from '../common/audit.js';
-import { inList, startOfDay, whenYesNo } from '../common/filters.js';
+import { blank, inList, startOfDay, whenFields, whenYesNo } from '../common/filters.js';
 import { likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import {
@@ -69,6 +69,12 @@ export class CompaniesService {
               where p.company_id = ${companies.id} and p.deleted_at is null and l.deleted_at is null
               and l.status in ('new', 'contacted', 'quoted'))`,
       ),
+      whenFields(filter, {
+        country: isNull(companies.countryCode),
+        address: blank(companies.address),
+        website: blank(companies.website),
+        commissionNotes: blank(companies.commissionNotes),
+      }),
     );
     const rows = await this.query()
       .where(and(...conditions))

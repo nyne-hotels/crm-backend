@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
+import { CampaignsModule } from './campaigns/campaigns.module.js';
 import { CompaniesModule } from './companies/companies.module.js';
 import { ContactImportsModule } from './contact-imports/contact-imports.module.js';
 import { ConsentModule } from './consent/consent.module.js';
@@ -32,6 +33,7 @@ import { StaysModule } from './stays/stays.module.js';
     CompaniesModule,
     FeedbackModule,
     ContactImportsModule,
+    CampaignsModule,
   ],
   controllers: [AppController, HealthController, ReferenceController],
   providers: [AppService],

@@ -139,6 +139,13 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
 };
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+const FIELD_LABELS: Record<string, string> = {
+  firstName: 'first name',
+  lastName: 'last name',
+  country: 'country',
+  birthday: 'birthday',
+};
+
 // "Last stay 1 Jan 2025 – 31 Dec 2025", "Last stay from 1 Jan 2025", "Last stay up to 31 Dec 2025"
 function dayRange(label: string, from: string | undefined, to: string | undefined) {
   if (from && to) return `${label} ${formatDay(from)} – ${formatDay(to)}`;
@@ -174,6 +181,15 @@ export function exportSummary(filter: MarketingExportFilters, names: ExportNames
   const tagged = anyOf(filter.tagId, (id) => names.tags?.[id] ?? `#${id}`);
   const lastAt = anyOf(filter.lastHotelId, hotel);
   const born = anyOf(filter.birthdayMonth, (m) => MONTH_NAMES[m - 1]);
+  // "first name or country"; "first name and country" when all of them must be
+  const fields = (list: string[] | undefined, match: 'any' | 'all' | undefined) => {
+    const words = list?.map((f) => FIELD_LABELS[f] ?? f);
+    return words && match === 'all' && words.length > 1
+      ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`
+      : anyOf(words, (w) => w);
+  };
+  const filled = fields(filter.filled, filter.filledMatch);
+  const missing = fields(filter.missing, filter.missingMatch);
   const parts = [
     anyOf(filter.market, (m) => MARKET_LABELS[m as keyof typeof MARKET_LABELS] ?? m),
     anyOf(filter.country, (code) => names.countries?.[code] ?? code),
@@ -189,6 +205,8 @@ export function exportSummary(filter: MarketingExportFilters, names: ExportNames
     dayRange('Added', filter.addedFrom, filter.addedTo),
     filter.upcomingStay && (filter.upcomingStay === 'yes' ? 'Booked to come' : 'No booking to come'),
     filter.lowRating && (filter.lowRating === 'yes' ? 'Gave a low rating' : 'No low ratings'),
+    filled && `Has ${filled}`,
+    missing && `Missing ${missing}`,
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : 'Whole list';
 }

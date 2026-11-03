@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, countryCodes, filterAmount, filterDay, ids, rangesInOrder, yesNo } from '../common/filters.js';
+import { anyOf, countryCodes, filterAmount, filterDay, ids, fieldFilters, rangesInOrder, yesNo } from '../common/filters.js';
 import {
   INTERACTION_DIRECTIONS,
   INTERACTION_KINDS,
@@ -27,8 +27,9 @@ const quoteHasCurrency = (v: { quotedValue?: number | null; currency?: string | 
   v.quotedValue == null || !!v.currency;
 
 // ---------- the request ----------
+// 'campaign' is set only by a campaign's public form, with the campaign.
 const requestFields = {
-  source: z.enum(LEAD_SOURCES),
+  source: z.enum(LEAD_SOURCES).exclude(['campaign'], 'Choose where the lead came from'),
   propertyId: trimmed.max(10).transform((v) => v || null).nullish(), // no hotel yet
   checkIn: date.nullish(),
   checkOut: date.nullish(),
@@ -96,6 +97,18 @@ export const FOLLOW_UP_FILTERS = ['overdue', 'today', 'due', 'week'] as const; /
 
 export const LEADS_PAGE_SIZE = 50;
 
+// "Filled in" / "Missing" on the request, and the person's details for reaching them.
+export const LEAD_FIELDS = [
+  'hotel',
+  'checkIn',
+  'checkOut',
+  'party',
+  'occasion',
+  'personName',
+  'personEmail',
+  'personPhone',
+] as const;
+
 const ownerFilter = anyOf(z.union([z.literal('me'), z.literal('none'), z.coerce.number().int().positive()]));
 
 const leadFilters = {
@@ -104,6 +117,7 @@ const leadFilters = {
   owner: ownerFilter, // staff ids, 'me', or 'none'
   propertyId: anyOf(trimmed.max(10)),
   source: anyOf(z.enum(LEAD_SOURCES)),
+  campaignId: ids, // the campaign whose form they sent
   // ---- More filters ----
   occasionId: ids,
   checkInFrom: filterDay, // the check-in they asked for
@@ -117,6 +131,7 @@ const leadFilters = {
   stayToLink: yesNo, // booked, with the stay still to link
   market: anyOf(z.enum(MARKETS)), // the person's market
   country: countryCodes, // the person's country
+  ...fieldFilters(LEAD_FIELDS),
 };
 const leadRanges = rangesInOrder(['checkInFrom', 'checkInTo'], ['createdFrom', 'createdTo'], ['quoteMin', 'quoteMax']);
 

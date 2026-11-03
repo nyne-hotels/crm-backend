@@ -10,7 +10,7 @@ import {
   softDelete,
   updater,
 } from '../common/audit.js';
-import { between, betweenDays, betweenTimes, inList, whenYesNo } from '../common/filters.js';
+import { between, betweenDays, betweenTimes, blank, inList, whenFields, whenYesNo } from '../common/filters.js';
 import { likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import {
@@ -138,24 +138,16 @@ export class GuestsService {
     const gaveFeedback = (extra = sql`true`) =>
       sql`exists (select 1 from ${feedback} f join ${stays} s on s.id = f.stay_id
             where s.contact_id = ${o.id} and f.deleted_at is null and s.deleted_at is null and ${extra})`;
-    const companyIs = (company: 'any' | 'none' | number) =>
-      company === 'any'
-        ? onContact(sql`c.company_id is not null`)
-        : company === 'none'
-          ? onContact(sql`c.company_id is null`)
-          : onContact(sql`c.company_id = ${company}`);
+    const none = (table: SQL, extra = sql`true`) =>
+      sql`not exists (select 1 from ${table} x where x.contact_id = ${o.id} and x.deleted_at is null and ${extra})`;
 
     return [
-      filter.company && or(...filter.company.map(companyIs)),
+      filter.company && onContact(inArray(sql`c.company_id`, filter.company)),
       filter.emailConsent && or(...filter.emailConsent.map((status) => consentIs('email', status))),
       filter.whatsappConsent && or(...filter.whatsappConsent.map((status) => consentIs('whatsapp', status))),
       whenYesNo(filter.doNotContact, onContact(sql`c.status = 'do_not_contact'`)),
       whenYesNo(filter.canEmail, sql`exists (select 1 from ${marketingEmailList} ml where ml.id = ${o.id})`),
-      whenYesNo(filter.hasEmail, hasMethod('email')),
-      whenYesNo(filter.hasPhone, hasMethod('phone')),
-      whenYesNo(filter.hasWhatsapp, hasMethod('phone', sql`m.is_whatsapp`)),
       filter.emailStatus ? hasMethod('email', sql`m.is_primary and ${inArray(sql`m.status`, filter.emailStatus)}`) : undefined,
-      whenYesNo(filter.vip, onContact(sql`nullif(trim(c.vip_reason), '') is not null`)),
       between(o.stayRows, filter.staysMin, filter.staysMax),
       betweenDays(o.lastStay, filter.lastStayFrom, filter.lastStayTo),
       betweenTimes(o.createdAt, filter.addedFrom, filter.addedTo),
@@ -180,14 +172,23 @@ export class GuestsService {
         ? sql`exists (select 1 from ${specialDates} d where d.contact_id = ${o.id} and d.deleted_at is null
               and d.occasion = 'birthday' and ${inArray(sql`d.month`, filter.birthdayMonth)})`
         : undefined,
-      whenYesNo(
-        filter.specialDates,
-        sql`exists (select 1 from ${specialDates} d where d.contact_id = ${o.id} and d.deleted_at is null)`,
-      ),
-      whenYesNo(
-        filter.preferences,
-        sql`exists (select 1 from ${preferences} p where p.contact_id = ${o.id} and p.deleted_at is null)`,
-      ),
+      // each test says when the field is missing; filled in is the opposite
+      whenFields(filter, {
+        name: and(blank(o.firstName), blank(o.lastName))!,
+        firstName: blank(o.firstName),
+        lastName: blank(o.lastName),
+        email: not(hasMethod('email')),
+        phone: not(hasMethod('phone')),
+        whatsapp: not(hasMethod('phone', sql`m.is_whatsapp`)),
+        country: isNull(o.countryCode),
+        company: onContact(sql`c.company_id is null`),
+        jobTitle: onContact(blank(sql`c.designation`)),
+        vipReason: onContact(blank(sql`c.vip_reason`)),
+        birthday: none(sql`${specialDates}`, sql`x.occasion = 'birthday'`),
+        specialDates: none(sql`${specialDates}`),
+        preferences: none(sql`${preferences}`),
+        tags: sql`not exists (select 1 from ${contactTags} t where t.contact_id = ${o.id})`,
+      }),
     ];
   }
 

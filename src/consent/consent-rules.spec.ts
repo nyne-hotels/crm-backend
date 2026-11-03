@@ -138,6 +138,18 @@ describe('the export log summary', () => {
     );
   });
 
+  it('names the fields filled in and missing, with "and" when all of them must be', () => {
+    expect(exportSummary({ filled: ['firstName', 'country'], filledMatch: 'all', missing: ['birthday'] }, {})).toBe(
+      'Has first name and country · Missing birthday',
+    );
+    expect(exportSummary({ filled: ['lastName', 'country'] }, {})).toBe('Has last name or country');
+    expect(exportSummary({ missing: ['firstName'] }, {})).toBe('Missing first name');
+    expect(exportSummary({ missing: ['firstName', 'country'] }, {})).toBe('Missing first name or country');
+    expect(exportSummary({ missing: ['firstName', 'lastName', 'birthday'], missingMatch: 'all' }, {})).toBe(
+      'Missing first name, last name and birthday',
+    );
+  });
+
   it('joins several values of a filter with "or"', () => {
     const hotels = { P01: 'Mayur Lodge', P02: 'Rock Villa', P03: 'Lake Lodge' };
     expect(

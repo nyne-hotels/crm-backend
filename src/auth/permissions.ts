@@ -15,6 +15,7 @@ export const AREAS = [
   'feedback', // guest feedback, follow-ups and hotel ratings
   'employees', // the employee list and what guests said about named employees (Module 8)
   'marketingExport',
+  'campaigns', // campaigns and their public forms, whose responses become leads
   'mergeGuests',
   'settings',
 ] as const;
@@ -29,8 +30,8 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permissions> = {
   admin: all('edit'),
   // runs the hotels day to day: guests, stays, leads, feedback, merging, exports
   management: { ...all('edit'), settings: 'none' },
-  // reads everything guest-facing; changes only consent (but can't clear do not contact),
-  // and exports the marketing list. Praise and criticism of named employees is
+  // reads everything guest-facing (campaigns too); changes only consent (but can't
+  // clear do not contact), and exports the marketing list. Praise and criticism of named employees is
   // for management and admin only.
   marketing: {
     ...all('view'),

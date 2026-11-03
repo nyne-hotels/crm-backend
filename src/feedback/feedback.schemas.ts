@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, filterDay, rangesInOrder, yesNo } from '../common/filters.js';
+import { anyOf, filterDay, fieldFilters, rangesInOrder, yesNo } from '../common/filters.js';
 import { DEPARTMENTS, MARKETS, SENTIMENTS, STAY_CHANNELS } from '../db/schema/index.js';
 import { UPLOAD_FIELDS } from './feedback-rules.js';
 
@@ -35,6 +35,17 @@ export type FeedbackTab = (typeof FEEDBACK_TABS)[number];
 
 export const FEEDBACK_PAGE_SIZE = 50;
 
+// "Filled in" / "Missing": the response, the stay, and the guest's details for following up.
+export const FEEDBACK_FIELDS = [
+  'rating',
+  'review',
+  'bookingReference',
+  'stayDates',
+  'guestName',
+  'guestEmail',
+  'guestPhone',
+] as const;
+
 export const listFeedbackSchema = z
   .object({
     tab: z.enum(FEEDBACK_TABS).default('all'),
@@ -45,20 +56,17 @@ export const listFeedbackSchema = z
     to: date.optional(),
     // ---- More filters ----
     q: trimmed.max(100).optional(), // guest name, booking reference or words in the review
-    ratingMin: z.coerce.number().int().min(1).max(5).optional(),
-    ratingMax: z.coerce.number().int().min(1).max(5).optional(),
-    rated: yesNo, // has a star rating
-    review: yesNo, // has written comments
     mentions: z.enum(['any', 'praise', 'criticism', 'none']).optional(), // only for roles that see mentions
     contacted: yesNo, // a call or message logged from the response
     stayFrom: filterDay, // the stay's departure
     stayTo: filterDay,
     channel: anyOf(z.enum(STAY_CHANNELS)), // how the stay was booked
     market: anyOf(z.enum(MARKETS)), // the guest's market
+    ...fieldFilters(FEEDBACK_FIELDS),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(FEEDBACK_PAGE_SIZE),
   })
-  .superRefine(rangesInOrder(['from', 'to'], ['ratingMin', 'ratingMax'], ['stayFrom', 'stayTo']));
+  .superRefine(rangesInOrder(['from', 'to'], ['stayFrom', 'stayTo']));
 export type ListFeedback = z.infer<typeof listFeedbackSchema>;
 
 // Add response: find the stay by guest name or booking reference.
@@ -119,10 +127,10 @@ export const listEmployeesSchema = z
     department: anyOf(z.enum(DEPARTMENTS)),
     status: z.enum(EMPLOYEE_STATUSES).default('active'),
     // ---- More filters ----
-    login: yesNo, // linked to a CRM login
     recent: z.enum(['praised', 'criticised', 'mentioned', 'none']).optional(), // guests' mentions in the last 90 days
     lastMentionedFrom: filterDay, // a day in Colombo
     lastMentionedTo: filterDay,
+    ...fieldFilters(['lastName', 'jobTitle', 'login']), // login = linked to a CRM login
   })
   .superRefine(rangesInOrder(['lastMentionedFrom', 'lastMentionedTo']));
 export type ListEmployees = z.infer<typeof listEmployeesSchema>;

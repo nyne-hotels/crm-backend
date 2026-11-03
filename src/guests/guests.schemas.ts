@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, countryCodes, filterCount, filterDay, ids, rangesInOrder, yesNo } from '../common/filters.js';
+import { anyOf, countryCodes, filterCount, filterDay, ids, fieldFilters, rangesInOrder, yesNo } from '../common/filters.js';
 import { CONSENT_STATUSES, CONTACT_METHOD_STATUSES, CONTACT_TYPES, LIFECYCLE_STAGES, MARKETS } from '../db/schema/index.js';
 
 const trimmed = z.string().trim();
@@ -57,6 +57,26 @@ export type UpdateGuest = z.infer<typeof updateGuestSchema>;
 // Stage filter offers the guest stages; agent contacts and influencers are found by type.
 export const GUEST_LIST_PAGE_SIZE = 50;
 
+// "Filled in" / "Missing": name = a first or a last name; whatsapp = a phone
+// known to be on WhatsApp; specialDates = any birthday, anniversary or other
+// date; preferences = likes or dislikes noted.
+export const GUEST_FIELDS = [
+  'name',
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'whatsapp',
+  'country',
+  'company',
+  'jobTitle',
+  'vipReason',
+  'birthday',
+  'specialDates',
+  'preferences',
+  'tags',
+] as const;
+
 export const listGuestsSchema = z
   .object({
     q: trimmed.max(100).optional(),
@@ -68,16 +88,12 @@ export const listGuestsSchema = z
     propertyId: anyOf(trimmed.max(10)), // hotel stayed at
     tagId: ids,
     // ---- More filters ----
-    company: anyOf(z.union([z.enum(['any', 'none']), z.coerce.number().int().positive()])), // works for a company
+    company: ids, // works for one of these companies (any or none: Filled in / Missing)
     emailConsent: anyOf(z.enum(CONSENT_STATUSES)),
     whatsappConsent: anyOf(z.enum(CONSENT_STATUSES)),
     doNotContact: yesNo,
     canEmail: yesNo, // on the marketing email list
-    hasEmail: yesNo,
-    hasPhone: yesNo,
-    hasWhatsapp: yesNo, // a phone known to be on WhatsApp
     emailStatus: anyOf(z.enum(CONTACT_METHOD_STATUSES)), // of the primary email
-    vip: yesNo, // has a VIP / industry reason
     staysMin: filterCount, // checked-out stays
     staysMax: filterCount,
     lastStayFrom: filterDay,
@@ -88,8 +104,7 @@ export const listGuestsSchema = z
     openLead: yesNo,
     feedback: z.enum(['given', 'low', 'none']).optional(), // low = a 1 or 2 star rating
     birthdayMonth: anyOf(z.coerce.number().int().min(1).max(12)),
-    specialDates: yesNo, // any birthday, anniversary or other date on file
-    preferences: yesNo, // any likes or dislikes noted
+    ...fieldFilters(GUEST_FIELDS),
     sort: z.enum(['name', 'lastStay', 'stays']).default('name'),
     order: z.enum(['asc', 'desc']).optional(), // default: A–Z for name, newest / most first otherwise
     page: z.coerce.number().int().min(1).default(1),

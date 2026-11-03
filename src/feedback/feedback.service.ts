@@ -4,7 +4,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { can } from '../auth/permissions.js';
 import type { SignedInStaff } from '../auth/signed-in-staff.js';
 import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, softDelete, updater } from '../common/audit.js';
-import { between, betweenDays, betweenTimes, inList, whenYesNo } from '../common/filters.js';
+import { betweenDays, betweenTimes, blank, inList, noMethod, whenFields, whenYesNo } from '../common/filters.js';
 import { likePattern } from '../common/sql.js';
 import { givenAtFor } from '../consent/consent-rules.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
@@ -61,9 +61,6 @@ export class FeedbackService {
       sql`exists (select 1 from ${employeeMentions} m where m.feedback_id = ${feedback.id} and m.deleted_at is null
             ${sentiment ? sql`and m.sentiment = ${sentiment}` : sql``})`;
     conditions.push(
-      between(feedback.rating, filter.ratingMin, filter.ratingMax),
-      whenYesNo(filter.rated, isNotNull(feedback.rating)),
-      whenYesNo(filter.review, sql`nullif(trim(${feedback.review}), '') is not null`),
       whenYesNo(
         filter.contacted,
         sql`exists (select 1 from ${interactions} i where i.feedback_id = ${feedback.id} and i.deleted_at is null)`,
@@ -71,6 +68,15 @@ export class FeedbackService {
       betweenDays(stays.departureDate, filter.stayFrom, filter.stayTo),
       inList(stays.channel, filter.channel),
       inList(contacts.market, filter.market),
+      whenFields(filter, {
+        rating: isNull(feedback.rating),
+        review: blank(feedback.review),
+        bookingReference: blank(stays.bookingReference),
+        stayDates: or(isNull(stays.arrivalDate), isNull(stays.departureDate))!,
+        guestName: and(blank(contacts.firstName), blank(contacts.lastName))!,
+        guestEmail: noMethod(contacts.id, 'email'),
+        guestPhone: noMethod(contacts.id, 'phone'),
+      }),
     );
     // mentions are only filtered for roles that may see them
     if (showMentions && filter.mentions) {

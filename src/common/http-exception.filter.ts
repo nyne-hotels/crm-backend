@@ -58,6 +58,7 @@ const UNIQUE_MESSAGES: Record<string, string> = {
   feedback_one_per_stay: 'This stay already has a response',
   employee_mentions_once: 'That employee is already mentioned on this response',
   employees_staff_user_uq: 'That CRM login is already linked to another employee',
+  campaigns_name_uq: 'A campaign with that name already exists',
 };
 
 interface PgError {

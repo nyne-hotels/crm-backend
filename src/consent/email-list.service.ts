@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { and, asc, count, desc, gte, inArray, isNull, lte, sql, type SQL } from 'drizzle-orm';
 import { createdInfo, creator, joinCreator } from '../common/audit.js';
-import { between, betweenTimes, inList, whenYesNo } from '../common/filters.js';
+import { between, betweenTimes, blank, inList, whenFields, whenYesNo } from '../common/filters.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import {
   consents,
@@ -171,6 +171,15 @@ function conditions(filter: EmailListFilter): SQL | undefined {
       sql`exists (select 1 from ${feedback} f join ${stays} s on s.id = f.stay_id
             where s.contact_id = ${ml.id} and f.deleted_at is null and s.deleted_at is null and f.rating <= ${LOW_RATING})`,
     ),
+  );
+  list.push(
+    whenFields(filter, {
+      firstName: blank(ml.firstName),
+      lastName: blank(ml.lastName),
+      country: isNull(ml.countryCode),
+      birthday: sql`not exists (select 1 from ${specialDates} d where d.contact_id = ${ml.id}
+        and d.deleted_at is null and d.occasion = 'birthday')`,
+    }),
   );
   return and(...list);
 }

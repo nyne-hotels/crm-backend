@@ -3,10 +3,11 @@ import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, t
 import { alias } from 'drizzle-orm/pg-core';
 import type { SignedInStaff } from '../auth/signed-in-staff.js';
 import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, softDelete, updater } from '../common/audit.js';
-import { between, betweenDays, betweenTimes, inList, whenYesNo } from '../common/filters.js';
+import { between, betweenDays, betweenTimes, blank, inList, noMethod, whenFields, whenYesNo } from '../common/filters.js';
 import { likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import {
+  campaigns,
   contactMethods,
   contacts,
   interactions,
@@ -242,6 +243,9 @@ export class LeadsService {
     if (quotedValue !== undefined) changes.quotedValue = quotedValue?.toFixed(2) ?? null;
 
     // checked against the saved lead, since only some fields may be sent
+    if (current.source === 'campaign' && input.source) {
+      throw new BadRequestException('This lead came from a campaign form, so its source stays Campaign');
+    }
     const checkIn = input.checkIn !== undefined ? input.checkIn : current.checkIn;
     const checkOut = input.checkOut !== undefined ? input.checkOut : current.checkOut;
     if (checkIn && checkOut && checkOut < checkIn) throw new BadRequestException('Check-out cannot be before check-in');
@@ -359,6 +363,8 @@ export class LeadsService {
       id: leads.id,
       status: leads.status,
       source: leads.source,
+      campaign: sql<{ id: number; name: string } | null>`(select json_build_object('id', c.id, 'name', c.name)
+        from ${campaigns} c where c.id = ${leads.campaignId})`,
       contactId: leads.contactId,
       firstName: contacts.firstName,
       lastName: contacts.lastName,
@@ -407,7 +413,11 @@ export class LeadsService {
         or(inList(leads.ownerId, ownerIds), filter.owner.includes('none') ? isNull(leads.ownerId) : undefined),
       );
     }
-    conditions.push(inList(leads.propertyId, filter.propertyId), inList(leads.source, filter.source));
+    conditions.push(
+      inList(leads.propertyId, filter.propertyId),
+      inList(leads.source, filter.source),
+      inList(leads.campaignId, filter.campaignId),
+    );
     if (filter.q) conditions.push(this.searchCondition(filter.q));
     // the "More filters" panel
     conditions.push(inList(leads.occasionId, filter.occasionId));
@@ -425,6 +435,16 @@ export class LeadsService {
       inList(leads.currency, filter.currency),
       inList(contacts.market, filter.market),
       inList(contacts.countryCode, filter.country),
+      whenFields(filter, {
+        hotel: isNull(leads.propertyId),
+        checkIn: isNull(leads.checkIn),
+        checkOut: isNull(leads.checkOut),
+        party: and(isNull(leads.adults), isNull(leads.children))!,
+        occasion: isNull(leads.occasionId),
+        personName: and(blank(contacts.firstName), blank(contacts.lastName))!,
+        personEmail: noMethod(leads.contactId, 'email'),
+        personPhone: noMethod(leads.contactId, 'phone'),
+      }),
     );
     return conditions;
   }

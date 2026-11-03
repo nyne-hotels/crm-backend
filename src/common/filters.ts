@@ -1,5 +1,6 @@
-import { and, gte, inArray, lt, lte, not, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { and, gte, inArray, lt, lte, not, or, SQL, sql, type SQLWrapper } from 'drizzle-orm';
 import { z } from 'zod';
+import { contactMethods } from '../db/schema/index.js';
 import { addDays } from '../stays/stay-rules.js';
 
 // Building blocks for the lists' filters (the "More filters" panels).
@@ -67,3 +68,43 @@ export const rangesInOrder =
       }
     }
   };
+
+// ---------- filled in or missing ----------
+// "Filled in: email" / "Missing: phone, country" – each list names its own
+// fields. Several ticked match any of them, or all with filledMatch /
+// missingMatch = all. A field can't be both (the app offers each in one list).
+export const fieldFilters = <K extends string>(fields: readonly [K, ...K[]]) => ({
+  filled: anyOf(z.enum(fields)),
+  filledMatch: z.enum(['any', 'all']).optional(),
+  missing: anyOf(z.enum(fields)),
+  missingMatch: z.enum(['any', 'all']).optional(),
+});
+
+// When a field is empty. Most fields are filled in when they're not empty;
+// a few say what "filled in" means, e.g. a stay's agent.
+type FieldTest = SQL | { missing: SQL; filled: SQL };
+
+export function whenFields<K extends string>(
+  filter: { filled?: K[]; filledMatch?: 'any' | 'all'; missing?: K[]; missingMatch?: 'any' | 'all' },
+  fields: Record<K, FieldTest>,
+): SQL | undefined {
+  const test = (field: K, want: 'missing' | 'filled') => {
+    const t = fields[field];
+    if (t instanceof SQL) return want === 'missing' ? t : not(t);
+    return t[want];
+  };
+  const match = (list: K[] | undefined, mode: 'any' | 'all' | undefined, want: 'missing' | 'filled') => {
+    if (!list?.length) return undefined;
+    const tests = list.map((field) => test(field, want));
+    return mode === 'all' ? and(...tests) : or(...tests);
+  };
+  return and(match(filter.filled, filter.filledMatch, 'filled'), match(filter.missing, filter.missingMatch, 'missing'));
+}
+
+// Empty text: null, '' or only spaces.
+export const blank = (column: SQLWrapper) => sql`nullif(trim(${column}), '') is null`;
+
+// The person has no email (or phone) on file.
+export const noMethod = (contactId: SQLWrapper, kind: 'email' | 'phone') =>
+  sql`not exists (select 1 from ${contactMethods} m where m.contact_id = ${contactId}
+    and m.kind = ${kind} and m.deleted_at is null)`;

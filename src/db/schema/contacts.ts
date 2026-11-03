@@ -184,7 +184,8 @@ export const CONSENT_CHANNELS = ['email', 'whatsapp'] as const;
 export const CONSENT_STATUSES = ['opted_in', 'opted_out', 'not_opted_in', 'unknown'] as const;
 // Where permission was given or withdrawn (Module 5). 'do_not_contact' is set
 // only by the database, when a guest is marked do not contact; 'contact_import'
-// only by Settings → Import contacts (Module 9).
+// only by Settings → Import contacts (Module 9); 'campaign_form' only by a
+// campaign's public form, when the guest ticks the opt-in box.
 export const CONSENT_SOURCES = [
   'wix',
   'website_form',
@@ -195,6 +196,7 @@ export const CONSENT_SOURCES = [
   'email_unsubscribe',
   'do_not_contact',
   'contact_import',
+  'campaign_form',
   'other',
 ] as const;
 

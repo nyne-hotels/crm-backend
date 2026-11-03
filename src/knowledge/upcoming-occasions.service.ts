@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, eq, isNotNull, lte, or, sql, type SQL } from 'drizzle-orm';
-import { inList, whenYesNo } from '../common/filters.js';
+import { and, asc, eq, inArray, isNotNull, isNull, lte, not, or, sql, type SQL } from 'drizzle-orm';
+import { blank, inList, noMethod, whenFields, whenYesNo } from '../common/filters.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import { upcomingSpecialDates } from '../db/schema/index.js';
 import { hotelToday } from '../stays/stay-rules.js';
@@ -28,7 +28,16 @@ export class UpcomingOccasionsService {
     conditions.push(
       whenYesNo(filter.nextStay, isNotNull(u.nextStayId)),
       whenYesNo(filter.milestone, sql`coalesce(${u.turningOrYears} > 0 and ${u.turningOrYears} % 5 = 0, false)`),
-      whenYesNo(filter.yearKnown, isNotNull(u.year)),
+      whenFields(filter, {
+        // only partners' and children's birthdays and "other" need one
+        label: {
+          missing: and(inArray(u.occasion, ['partner_birthday', 'child_birthday', 'other']), blank(u.label))!,
+          filled: not(blank(u.label)),
+        },
+        year: isNull(u.year),
+        guestEmail: noMethod(u.contactId, 'email'),
+        guestPhone: noMethod(u.contactId, 'phone'),
+      }),
     );
 
     const rows = await this.db

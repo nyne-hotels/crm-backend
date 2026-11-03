@@ -15,6 +15,7 @@ import {
 import { oneOf, notDeleted } from './_helpers.js';
 import { auditColumns, createdColumns, id, properties, staffUsers } from './core.js';
 import { contacts } from './contacts.js';
+import { campaigns } from './marketing.js';
 import { companies, occasions } from './reference.js';
 import { feedback, stays } from './stays.js';
 
@@ -30,6 +31,7 @@ export const LEAD_SOURCES = [
   'agent',
   'walk_in',
   'ota_message',
+  'campaign', // set only by a campaign's public form, with campaign_id
   'other',
 ] as const;
 export const LEAD_STATUSES = ['new', 'contacted', 'quoted', 'booked', 'lost'] as const;
@@ -68,10 +70,13 @@ export const leads = pgTable(
     // set when the lead converts; a lead marked booked by hand before the stay is
     // entered has none yet, and shows "stay to link"
     stayId: bigint('stay_id', { mode: 'number' }).references(() => stays.id),
+    // the campaign whose form the person sent (source 'campaign')
+    campaignId: bigint('campaign_id', { mode: 'number' }).references(() => campaigns.id),
     ...auditColumns(),
   },
   (t) => [
     check('leads_source_check', oneOf(t.source, LEAD_SOURCES)),
+    check('leads_campaign_check', sql`(${t.source} = 'campaign') = (${t.campaignId} IS NOT NULL)`),
     check('leads_status_check', oneOf(t.status, LEAD_STATUSES)),
     check('leads_lost_reason_check', oneOf(t.lostReason, LEAD_LOST_REASONS)),
     check('leads_lost_needs_reason_check', sql`${t.status} <> 'lost' OR ${t.lostReason} IS NOT NULL`),
@@ -86,6 +91,7 @@ export const leads = pgTable(
     index('leads_owner_idx').on(t.ownerId, t.followUpOn).where(notDeleted(t.deletedAt)),
     index('leads_contact_idx').on(t.contactId),
     index('leads_stay_idx').on(t.stayId),
+    index('leads_campaign_idx').on(t.campaignId),
   ],
 );
 

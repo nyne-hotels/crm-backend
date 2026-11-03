@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, not, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, not, or, sql, type SQL } from 'drizzle-orm';
 import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, restore, softDelete, updater } from '../common/audit.js';
-import { between, betweenDays, inList, whenYesNo } from '../common/filters.js';
+import { between, betweenDays, blank, inList, noMethod, whenFields, whenYesNo } from '../common/filters.js';
 import { likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import { companies, contactOverview, contacts, feedback, leads, occasions, properties, stays } from '../db/schema/index.js';
@@ -327,7 +327,6 @@ export class StaysService {
       filter.roomType ? ilike(stays.roomType, likePattern(filter.roomType)) : undefined,
       inList(stays.currency, filter.currency),
       between(stays.roomRevenue, filter.revenueMin, filter.revenueMax),
-      whenYesNo(filter.remarks, sql`nullif(trim(${stays.bookingRemarks}), '') is not null`),
       filter.feedback === 'given'
         ? hasFeedback()
         : filter.feedback === 'low'
@@ -339,6 +338,23 @@ export class StaysService {
       inList(contacts.lifecycleStage, filter.guestStage),
       inList(contacts.market, filter.market),
       inList(contacts.countryCode, filter.country),
+      // each test says when the field is missing; filled in is the opposite unless given
+      whenFields(filter, {
+        arrival: isNull(stays.arrivalDate),
+        departure: isNull(stays.departureDate),
+        bookingReference: blank(stays.bookingReference),
+        roomType: blank(stays.roomType),
+        guests: and(isNull(stays.adults), isNull(stays.children))!,
+        revenue: isNull(stays.roomRevenue),
+        agent: {
+          missing: and(inArray(stays.channel, ['travel_agent', 'ota']), isNull(stays.bookingCompanyId))!,
+          filled: isNotNull(stays.bookingCompanyId),
+        },
+        remarks: blank(stays.bookingRemarks),
+        guestName: and(blank(contacts.firstName), blank(contacts.lastName))!,
+        guestEmail: noMethod(stays.contactId, 'email'),
+        guestPhone: noMethod(stays.contactId, 'phone'),
+      }),
     ];
   }
 

@@ -134,6 +134,20 @@
       "when": 1793183075951,
       "tag": "0018_contact_import_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793700352023,
+      "tag": "0019_campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793700360439,
+      "tag": "0020_campaign_rules",
+      "breakpoints": true
     }
   ]
 }

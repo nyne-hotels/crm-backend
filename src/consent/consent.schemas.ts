@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { anyOf, countryCodes, filterCount, ids, rangesInOrder, yesNo } from '../common/filters.js';
+import { anyOf, countryCodes, filterCount, ids, fieldFilters, rangesInOrder, yesNo } from '../common/filters.js';
 import { CONSENT_CHANNELS, CONTACT_TYPES, LIFECYCLE_STAGES, MARKETS } from '../db/schema/index.js';
 import { CHOICE_SOURCES } from './consent-rules.js';
 
@@ -25,6 +25,10 @@ export type ChangeConsent = z.infer<typeof changeConsentSchema>;
 // ---------- Marketing → Email list ----------
 export const EMAIL_LIST_PAGE_SIZE = 50;
 
+// "Filled in" / "Missing": everyone on the list has an email, so these are for
+// personalising (a first name for "Dear …") and targeting.
+export const EMAIL_LIST_FIELDS = ['firstName', 'lastName', 'country', 'birthday'] as const;
+
 export const emailListFilterSchema = z
   .object({
     // a filter with several values matches any of them
@@ -47,6 +51,7 @@ export const emailListFilterSchema = z
     addedTo: day.optional(),
     upcomingStay: yesNo, // booked to come, or in house now
     lowRating: yesNo, // ever gave a 1 or 2 star rating
+    ...fieldFilters(EMAIL_LIST_FIELDS),
   })
   .refine((v) => !(v.lastStayFrom && v.lastStayTo && v.lastStayFrom > v.lastStayTo), {
     path: ['lastStayTo'],
