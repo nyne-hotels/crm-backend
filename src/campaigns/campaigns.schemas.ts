@@ -20,6 +20,7 @@ export const campaignSlugSchema = trimmed.toLowerCase().regex(/^[a-z0-9]+(-[a-z0
 // What a guest sends from campaigns/. The phone needs its country code: the
 // form doesn't ask for a country. `website` is a field people never see;
 // bots that fill every field fill it in (see CampaignFormService.submit()).
+// `turnstileToken` is from the Cloudflare bot check (see turnstile.ts).
 export const campaignResponseSchema = z.object({
   firstName: trimmed.min(1, 'Enter your first name').max(100),
   lastName: trimmed.max(100).transform((v) => v || null).nullish(),
@@ -28,5 +29,6 @@ export const campaignResponseSchema = z.object({
   comments: trimmed.max(2000, 'Keep your comments under 2,000 characters').transform((v) => v || null).nullish(),
   optIn: z.boolean().default(false),
   website: z.string().max(200).optional(),
+  turnstileToken: z.string().max(2048).optional(),
 });
 export type CampaignResponse = z.infer<typeof campaignResponseSchema>;

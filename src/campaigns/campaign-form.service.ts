@@ -20,6 +20,7 @@ import { logStatusChanges } from '../leads/lead-writer.js';
 import { HOTEL_TIME_ZONE, hotelToday } from '../stays/stay-rules.js';
 import { formNote, OPT_IN_WORDING, optInEvidence, optInOutcome } from './campaign-rules.js';
 import type { CampaignResponse } from './campaigns.schemas.js';
+import { TurnstileVerifier } from './turnstile.js';
 
 const phoneDigits = sql`regexp_replace(${contactMethods.value}, '[^0-9]', '', 'g')`;
 const dayFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: HOTEL_TIME_ZONE });
@@ -41,7 +42,10 @@ const dayFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'sho
 export class CampaignFormService {
   private readonly throttle = new SubmissionThrottle();
 
-  constructor(@InjectDb() private readonly db: Database) {}
+  constructor(
+    @InjectDb() private readonly db: Database,
+    private readonly turnstile: TurnstileVerifier,
+  ) {}
 
   async get(slug: string) {
     const campaign = await this.find(slug);
@@ -56,6 +60,8 @@ export class CampaignFormService {
     if (!this.throttle.allow(ip)) {
       throw new HttpException('Too many forms sent from here. Try again in a few minutes.', HttpStatus.TOO_MANY_REQUESTS);
     }
+    // after the throttle, so a flood of forms isn't a flood of calls to Cloudflare
+    await this.turnstile.verify(input.turnstileToken, ip);
     const phone = input.phone ? formatPhone(input.phone) : null;
     if (input.phone && !phone) {
       throw new BadRequestException('phone: Enter your phone number with its country code, e.g. +94 77 123 4567');
