@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, desc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like, ne, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { joinUpdater, lastUpdated, updater } from '../common/audit.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
@@ -67,6 +67,7 @@ export class CampaignsService {
     if (!Object.keys(changes).length) return current;
     await withActingStaff(this.db, async (tx) => {
       if (input.ownerId && input.ownerId !== current.owner.id) await assertOwner(tx, input.ownerId);
+      if (input.slug && input.slug !== current.slug) await assertSlugFree(tx, input.slug, id);
       await tx.update(campaigns).set(changes).where(eq(campaigns.id, id));
     });
     return this.get(id);
@@ -106,6 +107,20 @@ export class CampaignsService {
       .innerJoin(owner, eq(owner.id, campaigns.ownerId))
       .leftJoin(updater, joinUpdater(campaigns))
       .$dynamic();
+  }
+}
+
+// A new link can't be one another campaign has, even a closed or deleted
+// one: its emails may still be in inboxes (see uniqueSlug()).
+async function assertSlugFree(tx: Transaction, slug: string, id: number) {
+  const [taken] = await tx
+    .select({ name: campaigns.name, deletedAt: campaigns.deletedAt })
+    .from(campaigns)
+    .where(and(eq(campaigns.slug, slug), ne(campaigns.id, id)));
+  if (taken) {
+    throw new ConflictException(
+      taken.deletedAt ? 'A deleted campaign used that link. Choose another.' : `${taken.name} already uses that link`,
+    );
   }
 }
 

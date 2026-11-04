@@ -35,7 +35,7 @@ export class CampaignsController {
     return this.campaigns.create(body);
   }
 
-  // rename, change the owner, or close / reopen with isActive
+  // rename, change the link or the owner, or close / reopen with isActive
   @Patch(':id')
   @RequireAccess('campaigns', 'edit')
   update(@Param('id', ParseIntPipe) id: number, @Body(new ZodValidationPipe(updateCampaignSchema)) body: UpdateCampaign) {

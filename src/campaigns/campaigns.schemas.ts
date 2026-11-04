@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { emailValue } from '../guests/guests.schemas.js';
+import { SLUG_LENGTH } from './campaign-rules.js';
 
 const trimmed = z.string().trim();
 const name = trimmed.min(1, 'Enter a name').max(80);
@@ -10,8 +11,16 @@ const id = z.number().int().positive();
 export const createCampaignSchema = z.object({ name, ownerId: id });
 export type CreateCampaign = z.infer<typeof createCampaignSchema>;
 
-// rename, hand the leads to someone else, or close / reopen with isActive
-export const updateCampaignSchema = z.object({ name, ownerId: id, isActive: z.boolean() }).partial();
+// the form's address, /<slug>, when someone types it in
+const slug = trimmed
+  .toLowerCase()
+  .min(1, 'Enter the link')
+  .max(SLUG_LENGTH, `Keep the link to ${SLUG_LENGTH} characters or fewer`)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use only letters, numbers and single dashes, e.g. halloween-2026');
+
+// rename, change the link (links already sent then stop working), hand the
+// leads to someone else, or close / reopen with isActive
+export const updateCampaignSchema = z.object({ name, slug, ownerId: id, isActive: z.boolean() }).partial();
 export type UpdateCampaign = z.infer<typeof updateCampaignSchema>;
 
 // ---------- the public form ----------

@@ -51,8 +51,8 @@ export const marketingExports = pgTable(
 // 25. CAMPAIGNS – a marketing campaign (Halloween 2026 …). Its emails link
 //     to the public form in campaigns/, at /<slug>; each form sent becomes a
 //     lead (source 'campaign') for the campaign's owner. The slug is made
-//     from the name once and never changes, so renaming doesn't break links
-//     already sent. Closed with the Active switch rather than deleted: a
+//     from the name once; renaming doesn't change it, so links already sent
+//     keep working. It can be changed by hand, which breaks them. Closed with the Active switch rather than deleted: a
 //     closed campaign's form says it has ended.
 // =====================================================================
 export const campaigns = pgTable(

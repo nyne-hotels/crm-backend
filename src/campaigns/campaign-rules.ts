@@ -3,10 +3,10 @@ import type { ConsentStatus } from '../consent/consent-rules.js';
 // ---------------------------------------------------------------------
 // A campaign's form lives at /<slug> on the campaign site. The slug is made
 // from the name once, when the campaign is added: "Halloween 2026" →
-// halloween-2026. Accents are dropped (Café → cafe) and anything that isn't a
+// halloween-2026; renaming keeps it, though it can be changed by hand. Accents are dropped (Café → cafe) and anything that isn't a
 // letter or digit becomes one dash. A name with neither becomes "campaign".
 // ---------------------------------------------------------------------
-const SLUG_LENGTH = 60;
+export const SLUG_LENGTH = 60;
 
 export function slugFor(name: string): string {
   const slug = name
