@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, not, or, sql, type SQL } from 'drizzle-orm';
 import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, restore, softDelete, updater } from '../common/audit.js';
 import { between, betweenDays, blank, inList, noMethod, whenFields, whenYesNo } from '../common/filters.js';
@@ -293,7 +293,17 @@ export class StaysService {
     await withActingStaff(this.db, (tx) => softDelete(tx, stays, id));
   }
 
+  // A stay of a deleted guest would be restored into no list at all, so the guest comes back first.
   async restore(id: number) {
+    const [guest] = await this.db
+      .select({ firstName: contacts.firstName, lastName: contacts.lastName, deletedAt: contacts.deletedAt })
+      .from(stays)
+      .innerJoin(contacts, eq(contacts.id, stays.contactId))
+      .where(eq(stays.id, id));
+    if (guest?.deletedAt) {
+      const name = [guest.firstName, guest.lastName].filter(Boolean).join(' ') || 'this guest';
+      throw new ConflictException(`The guest is deleted too. Restore ${name} first.`);
+    }
     await withActingStaff(this.db, (tx) => restore(tx, stays, id));
     return this.get(id);
   }

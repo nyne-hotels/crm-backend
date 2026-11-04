@@ -128,4 +128,4 @@ In build order. The technical details are in Nyne CRM – How the Database Opera
 - Password reset by email, for staff who have a work email.
 - Sign in with Google or Microsoft.
 - Limiting staff to their own hotel's guests and stays.
-- A "Deleted items" screen for admins to restore records.
+- ~~A "Deleted items" screen for admins to restore records.~~ Built 2026-11-04: Settings → Deleted items (guests, stays, companies).

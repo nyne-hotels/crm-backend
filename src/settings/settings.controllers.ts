@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
 import { RequireAccess } from '../auth/decorators.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
+import { DeletedItemsService, listDeletedSchema, type ListDeleted } from './deleted-items/deleted-items.service.js';
 import {
   createOccasionSchema,
   OccasionsService,
@@ -76,5 +77,17 @@ export class TagsController {
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body(new ZodValidationPipe(updateTagSchema)) body: z.infer<typeof updateTagSchema>) {
     return this.tags.update(id, body);
+  }
+}
+
+// Restoring is POST /guests/:id/restore, /stays/:id/restore or /companies/:id/restore.
+@Controller('settings/deleted-items')
+@RequireAccess('settings', 'edit')
+export class DeletedItemsController {
+  constructor(private readonly deleted: DeletedItemsService) {}
+
+  @Get()
+  list(@Query(new ZodValidationPipe(listDeletedSchema)) query: ListDeleted) {
+    return this.deleted.list(query);
   }
 }

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, softDelete, updater } from '../common/audit.js';
+import { createdInfo, creator, joinCreator, joinUpdater, lastUpdated, restore, softDelete, updater } from '../common/audit.js';
 import { blank, inList, startOfDay, whenFields, whenYesNo } from '../common/filters.js';
 import { likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
@@ -127,6 +127,11 @@ export class CompaniesService {
   // Hidden from every list; its stays and people keep the link, so a restore brings it back.
   async remove(id: number) {
     await withActingStaff(this.db, (tx) => softDelete(tx, companies, id));
+  }
+
+  async restore(id: number) {
+    await withActingStaff(this.db, (tx) => restore(tx, companies, id));
+    return this.get(id);
   }
 
   // ---------- people ----------

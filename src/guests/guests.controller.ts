@@ -62,7 +62,7 @@ export class GuestsController {
     await this.guests.remove(id);
   }
 
-  // Bringing back a deleted guest is for admins (a "Deleted items" screen comes later).
+  // Bringing back a deleted guest is for admins (Settings → Deleted items).
   @Post(':id/restore')
   @RequireAccess('settings', 'edit')
   restore(@Param('id', ParseIntPipe) id: number) {

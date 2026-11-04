@@ -85,6 +85,13 @@ export class CompaniesController {
     await this.companies.remove(id);
   }
 
+  // Bringing back a deleted company is for admins (Settings → Deleted items).
+  @Post(':id/restore')
+  @RequireAccess('settings', 'edit')
+  restore(@Param('id', ParseIntPipe) id: number) {
+    return this.companies.restore(id);
+  }
+
   // returns the company's people
   @Post(':id/people')
   @RequireAccess('leads', 'edit')
