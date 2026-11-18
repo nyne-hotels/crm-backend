@@ -217,7 +217,7 @@ export class StaysService {
   // ---------- add, edit, status, delete ----------
   async create(input: CreateStay) {
     const id = await withActingStaff(this.db, async (tx) => {
-      const contactId = input.newGuest ? await insertGuest(tx, input.newGuest) : input.contactId!;
+      const contactId = input.newGuest ? await insertGuest(tx, input.newGuest, { via: 'crm' }) : input.contactId!;
       if (!input.newGuest) await this.assertGuest(tx, contactId);
       const [row] = await tx
         .insert(stays)

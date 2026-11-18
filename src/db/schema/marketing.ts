@@ -54,6 +54,8 @@ export const marketingExports = pgTable(
 //     from the name once; renaming doesn't change it, so links already sent
 //     keep working. It can be changed by hand, which breaks them. Closed with the Active switch rather than deleted: a
 //     closed campaign's form says it has ended.
+//     mailchimp_campaign_id: the campaign's email in Mailchimp (one email per
+//     campaign), whose report the CRM shows. One CRM campaign per email.
 // =====================================================================
 export const campaigns = pgTable(
   'campaigns',
@@ -66,9 +68,12 @@ export const campaigns = pgTable(
       .notNull()
       .references(() => staffUsers.id),
     isActive: boolean('is_active').notNull().default(true),
+    mailchimpCampaignId: text('mailchimp_campaign_id'), // e.g. 'd610b94234'; NULL = not linked yet
     ...auditColumns(),
   },
   (t) => [
+    uniqueIndex('campaigns_mailchimp_uq').on(t.mailchimpCampaignId).where(notDeleted(t.deletedAt)),
+    check('campaigns_mailchimp_check', sql`${t.mailchimpCampaignId} ~ '^[a-z0-9]{1,20}$'`),
     uniqueIndex('campaigns_name_uq').on(sql`lower(${t.name})`).where(notDeleted(t.deletedAt)),
     uniqueIndex('campaigns_slug_uq').on(t.slug),
     check('campaigns_slug_check', sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),

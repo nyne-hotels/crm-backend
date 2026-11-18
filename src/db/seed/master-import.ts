@@ -163,6 +163,7 @@ async function runImport(
         companyId: c.companyKey ? companyIds.get(c.companyKey)! : null,
         designation: c.designation,
         vipReason: c.vipReason,
+        addedVia: 'master_import' as const,
       })),
     ),
   );

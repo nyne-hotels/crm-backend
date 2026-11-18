@@ -59,6 +59,7 @@ const UNIQUE_MESSAGES: Record<string, string> = {
   employee_mentions_once: 'That employee is already mentioned on this response',
   employees_staff_user_uq: 'That CRM login is already linked to another employee',
   campaigns_name_uq: 'A campaign with that name already exists',
+  campaigns_mailchimp_uq: 'Another campaign is already linked to that Mailchimp email',
 };
 
 interface PgError {

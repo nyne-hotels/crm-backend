@@ -14,6 +14,8 @@ import { between, betweenDays, betweenTimes, blank, inList, whenFields, whenYesN
 import { likePattern } from '../common/sql.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
 import {
+  bookingImports,
+  campaigns,
   companies,
   CONSENT_CHANNELS,
   consents,
@@ -151,6 +153,7 @@ export class GuestsService {
       between(o.stayRows, filter.staysMin, filter.staysMax),
       betweenDays(o.lastStay, filter.lastStayFrom, filter.lastStayTo),
       betweenTimes(o.createdAt, filter.addedFrom, filter.addedTo),
+      filter.addedVia && onContact(inArray(sql`c.added_via`, filter.addedVia)),
       whenYesNo(
         filter.upcomingStay,
         sql`exists (select 1 from ${stays} s where s.contact_id = ${o.id} and s.deleted_at is null
@@ -209,12 +212,23 @@ export class GuestsService {
         designation: contacts.designation,
         vipReason: contacts.vipReason,
         status: contacts.status,
+        // how they came to be in the CRM, and from which import or campaign
+        addedVia: contacts.addedVia,
+        addedViaContactImportId: contacts.addedViaContactImportId,
+        addedViaBookingImport: {
+          id: bookingImports.id,
+          fileName: bookingImports.fileName,
+          at: bookingImports.createdAt,
+        },
+        addedViaCampaign: { id: campaigns.id, name: campaigns.name },
         created: createdInfo(contacts),
         lastUpdated: lastUpdated(contacts),
       })
       .from(contacts)
       .leftJoin(countries, eq(countries.code, contacts.countryCode))
       .leftJoin(companies, and(eq(companies.id, contacts.companyId), isNull(companies.deletedAt)))
+      .leftJoin(bookingImports, eq(bookingImports.id, contacts.addedViaBookingImportId))
+      .leftJoin(campaigns, eq(campaigns.id, contacts.addedViaCampaignId))
       .leftJoin(creator, joinCreator(contacts))
       .leftJoin(updater, joinUpdater(contacts))
       .where(and(eq(contacts.id, id), isNull(contacts.deletedAt)));
@@ -277,7 +291,7 @@ export class GuestsService {
   }
 
   async create(input: CreateGuest) {
-    const id = await withActingStaff(this.db, (tx) => insertGuest(tx, input));
+    const id = await withActingStaff(this.db, (tx) => insertGuest(tx, input, { via: 'crm' }));
     return this.get(id);
   }
 
@@ -363,8 +377,16 @@ export class GuestsService {
 // A new guest with their first email and/or phone (both primary), and
 // consent rows for each channel at "unknown", as for guests from bookings.
 // Run inside withActingStaff(); returns the new guest's id. Also used by the
-// stay form's "New guest".
-export async function insertGuest(tx: Transaction, input: CreateGuest): Promise<number> {
+// stay form's "New guest". `origin` is how they came to be in the CRM
+// (contacts.added_via): by hand, or from a campaign.
+export type ContactOrigin = { via: 'crm' } | { via: 'campaign_form' | 'mailchimp'; campaignId: number };
+
+// firstName may be null for someone the Mailchimp sync adds without one.
+export async function insertGuest(
+  tx: Transaction,
+  input: Omit<CreateGuest, 'firstName'> & { firstName: string | null },
+  origin: ContactOrigin,
+): Promise<number> {
   const phone = input.phone && {
     ...input.phone,
     value: phoneOrThrow(input.phone.value, input.phone.country ?? input.countryCode),
@@ -381,6 +403,8 @@ export async function insertGuest(tx: Transaction, input: CreateGuest): Promise<
       designation: input.designation,
       vipReason: input.vipReason,
       companyId: input.companyId,
+      addedVia: origin.via,
+      addedViaCampaignId: 'campaignId' in origin ? origin.campaignId : null,
     })
     .returning({ id: contacts.id });
 

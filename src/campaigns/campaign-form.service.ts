@@ -81,7 +81,7 @@ export class CampaignFormService {
           countryCode: await countryOfPhone(tx, phone),
           email: { value: input.email, isShared: false },
           phone: phone ? { value: phone, isShared: false } : null,
-        }));
+        }, { via: 'campaign_form', campaignId: campaign.id }));
 
       // ---- the opt-in box ----
       const [person] = await tx

@@ -206,7 +206,7 @@ export class LeadsService {
   async create(input: CreateLead, staff: SignedInStaff) {
     const id = await withActingStaff(this.db, async (tx) => {
       const contactId = input.newPerson
-        ? await insertGuest(tx, { ...input.newPerson, contactType: 'lead' })
+        ? await insertGuest(tx, { ...input.newPerson, contactType: 'lead' }, { via: 'crm' })
         : await this.assertPerson(tx, input.contactId!);
       const ownerId = input.ownerId ?? staff.id;
       await this.assertOwner(tx, ownerId);

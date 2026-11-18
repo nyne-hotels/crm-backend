@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { anyOf, countryCodes, filterCount, filterDay, ids, fieldFilters, rangesInOrder, yesNo } from '../common/filters.js';
-import { CONSENT_STATUSES, CONTACT_METHOD_STATUSES, CONTACT_TYPES, LIFECYCLE_STAGES, MARKETS } from '../db/schema/index.js';
+import { ADDED_VIA, CONSENT_STATUSES, CONTACT_METHOD_STATUSES, CONTACT_TYPES, LIFECYCLE_STAGES, MARKETS } from '../db/schema/index.js';
 
 const trimmed = z.string().trim();
 const optionalText = trimmed.transform((v) => v || null).nullish();
@@ -100,6 +100,7 @@ export const listGuestsSchema = z
     lastStayTo: filterDay,
     addedFrom: filterDay, // added to the CRM, a day in Colombo
     addedTo: filterDay,
+    addedVia: anyOf(z.enum(ADDED_VIA)), // how they came to be in the CRM
     upcomingStay: yesNo, // booked to come, or in house now
     openLead: yesNo,
     feedback: z.enum(['given', 'low', 'none']).optional(), // low = a 1 or 2 star rating

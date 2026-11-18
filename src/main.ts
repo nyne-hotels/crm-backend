@@ -25,8 +25,8 @@ async function bootstrap() {
   app.use('/api/stays/imports', express.json({ limit: '15mb' }));
   // a contact list of up to 10,000 rows, with the admin's choices
   app.use('/api/settings/contact-imports', express.json({ limit: '30mb' }));
-  // an unsubscribe or bounce list of up to 50,000 emails
-  app.use('/api/marketing/uploads', express.json({ limit: '5mb' }));
+  // Mailchimp's webhook sends form fields (data[email] …)
+  app.use('/api/public/mailchimp', express.urlencoded({ extended: true, limit: '100kb' }));
   app.use(express.json({ limit: '1mb' }));
 
   app.useGlobalFilters(new HttpExceptionFilter());

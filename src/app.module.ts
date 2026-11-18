@@ -14,6 +14,7 @@ import { GuestsModule } from './guests/guests.module.js';
 import { HealthController } from './health/health.controller.js';
 import { KnowledgeModule } from './knowledge/knowledge.module.js';
 import { LeadsModule } from './leads/leads.module.js';
+import { MailchimpModule } from './mailchimp/mailchimp.module.js';
 import { ReferenceController } from './reference/reference.controller.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { StaysModule } from './stays/stays.module.js';
@@ -34,6 +35,7 @@ import { StaysModule } from './stays/stays.module.js';
     FeedbackModule,
     ContactImportsModule,
     CampaignsModule,
+    MailchimpModule,
   ],
   controllers: [AppController, HealthController, ReferenceController],
   providers: [AppService],

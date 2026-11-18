@@ -68,19 +68,3 @@ export const listEmailListSchema = z.intersection(
   }),
 );
 export type ListEmailList = z.infer<typeof listEmailListSchema>;
-
-// ---------- Marketing → Upload unsubscribes or bounces ----------
-// The app reads the file and sends the email column.
-export const UPLOAD_KINDS = ['unsubscribes', 'bounces'] as const;
-export type UploadKind = (typeof UPLOAD_KINDS)[number];
-
-const uploadFields = {
-  kind: z.enum(UPLOAD_KINDS),
-  emails: z.array(z.string().max(320)).min(1, 'The file has no email addresses').max(50_000, 'Upload up to 50,000 emails at a time'),
-};
-
-export const previewUploadSchema = z.object(uploadFields);
-export type PreviewUpload = z.infer<typeof previewUploadSchema>;
-
-export const commitUploadSchema = z.object({ ...uploadFields, fileName: trimmed.min(1).max(255) });
-export type CommitUpload = z.infer<typeof commitUploadSchema>;

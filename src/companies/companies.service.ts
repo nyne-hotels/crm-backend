@@ -162,7 +162,7 @@ export class CompaniesService {
     await this.get(id);
     await withActingStaff(this.db, async (tx) => {
       if (input.newPerson) {
-        await insertGuest(tx, { ...input.newPerson, companyId: id });
+        await insertGuest(tx, { ...input.newPerson, companyId: id }, { via: 'crm' });
         return;
       }
       const rows = await tx

@@ -4,19 +4,14 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import type { ConsentChannel } from './consent-rules.js';
 import {
   changeConsentSchema,
-  commitUploadSchema,
   consentChannelSchema,
   emailListFilterSchema,
   listEmailListSchema,
-  previewUploadSchema,
   type ChangeConsent,
-  type CommitUpload,
   type EmailListFilter,
   type ListEmailList,
-  type PreviewUpload,
 } from './consent.schemas.js';
 import { EmailListService } from './email-list.service.js';
-import { EmailUploadsService } from './email-uploads.service.js';
 import { GuestConsentService } from './guest-consent.service.js';
 
 // The Consent panel on the guest profile. Every role sees it; admin,
@@ -60,10 +55,7 @@ export class GuestConsentController {
 @Controller('marketing')
 @RequireAccess('marketingExport', 'view')
 export class MarketingController {
-  constructor(
-    private readonly emailList: EmailListService,
-    private readonly uploads: EmailUploadsService,
-  ) {}
+  constructor(private readonly emailList: EmailListService) {}
 
   @Get('email-list')
   list(@Query(new ZodValidationPipe(listEmailListSchema)) query: ListEmailList) {
@@ -80,19 +72,5 @@ export class MarketingController {
   @Get('exports')
   exports() {
     return this.emailList.history();
-  }
-
-  // Marketing → Upload unsubscribes or bounces
-  @Post('uploads/preview')
-  @HttpCode(200)
-  @RequireAccess('guestConsent', 'edit')
-  previewUpload(@Body(new ZodValidationPipe(previewUploadSchema)) body: PreviewUpload) {
-    return this.uploads.preview(body);
-  }
-
-  @Post('uploads')
-  @RequireAccess('guestConsent', 'edit')
-  upload(@Body(new ZodValidationPipe(commitUploadSchema)) body: CommitUpload) {
-    return this.uploads.commit(body);
   }
 }

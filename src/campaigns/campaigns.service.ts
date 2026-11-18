@@ -4,8 +4,10 @@ import { and, desc, eq, inArray, isNull, like, ne, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { joinUpdater, lastUpdated, updater } from '../common/audit.js';
 import { InjectDb, type Database } from '../db/drizzle.module.js';
-import { campaigns, contacts, leads, OPEN_LEAD_STATUSES, staffUsers } from '../db/schema/index.js';
+import { campaigns, contacts, leads, mailchimpRecipients, mailchimpSyncs, OPEN_LEAD_STATUSES, staffUsers } from '../db/schema/index.js';
 import { withActingStaff, type Transaction } from '../db/with-staff.js';
+import { CampaignReportService } from './campaign-report.service.js';
+import { CampaignSyncService } from './campaign-sync.service.js';
 import { slugFor, uniqueSlug } from './campaign-rules.js';
 import type { CreateCampaign, UpdateCampaign } from './campaigns.schemas.js';
 
@@ -21,6 +23,8 @@ export class CampaignsService {
   constructor(
     @InjectDb() private readonly db: Database,
     config: ConfigService,
+    private readonly reports: CampaignReportService,
+    private readonly syncs: CampaignSyncService,
   ) {
     const urls = config.get<string>('CAMPAIGN_FORM_URL') ?? 'http://localhost:5174';
     this.formUrl = urls.split(',')[0].trim().replace(/\/+$/, '');
@@ -68,8 +72,21 @@ export class CampaignsService {
     await withActingStaff(this.db, async (tx) => {
       if (input.ownerId && input.ownerId !== current.owner.id) await assertOwner(tx, input.ownerId);
       if (input.slug && input.slug !== current.slug) await assertSlugFree(tx, input.slug, id);
+      if (input.mailchimpCampaignId && input.mailchimpCampaignId !== current.mailchimpCampaignId) {
+        await assertEmailFree(tx, input.mailchimpCampaignId, id);
+        await this.reports.assertSentEmail(input.mailchimpCampaignId);
+      }
+      // another email (or none): what was synced for the old one goes. Contacts it added stay.
+      if (input.mailchimpCampaignId !== undefined && input.mailchimpCampaignId !== current.mailchimpCampaignId) {
+        await tx.delete(mailchimpRecipients).where(eq(mailchimpRecipients.campaignId, id));
+        await tx.delete(mailchimpSyncs).where(eq(mailchimpSyncs.campaignId, id));
+      }
       await tx.update(campaigns).set(changes).where(eq(campaigns.id, id));
     });
+    // a newly linked email: bring in its recipients straight away, in the background
+    if (input.mailchimpCampaignId && input.mailchimpCampaignId !== current.mailchimpCampaignId) {
+      void this.syncs.sync(id).catch(() => undefined); // a problem is kept on the campaign
+    }
     return this.get(id);
   }
 
@@ -88,6 +105,7 @@ export class CampaignsService {
         name: campaigns.name,
         slug: campaigns.slug,
         isActive: campaigns.isActive,
+        mailchimpCampaignId: campaigns.mailchimpCampaignId,
         // isActive: false = they've left; their campaign still gives them leads until it's handed on
         owner: {
           id: owner.id,
@@ -122,6 +140,15 @@ async function assertSlugFree(tx: Transaction, slug: string, id: number) {
       taken.deletedAt ? 'A deleted campaign used that link. Choose another.' : `${taken.name} already uses that link`,
     );
   }
+}
+
+// One CRM campaign per Mailchimp email.
+async function assertEmailFree(tx: Transaction, mailchimpId: string, id: number) {
+  const [taken] = await tx
+    .select({ name: campaigns.name })
+    .from(campaigns)
+    .where(and(eq(campaigns.mailchimpCampaignId, mailchimpId), ne(campaigns.id, id), isNull(campaigns.deletedAt)));
+  if (taken) throw new ConflictException(`${taken.name} is already linked to that Mailchimp email`);
 }
 
 // Leads need an active admin or management owner, as in the leads module.

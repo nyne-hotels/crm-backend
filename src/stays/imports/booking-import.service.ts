@@ -97,7 +97,21 @@ export class BookingImportService {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext('booking_import'))`);
       const { plan, fields } = await this.plan(tx, input, new Set(input.skip));
 
-      const newIds = await this.insertNewGuests(tx, plan);
+      // the import's own row first, filled in at the end: new guests point at it as their "Added via"
+      const [saved] = await tx
+        .insert(bookingImports)
+        .values({
+          fileName: input.fileName,
+          propertyId: input.propertyId || null,
+          rowsTotal: input.rows.length,
+          added: 0,
+          updated: 0,
+          skipped: 0,
+          newGuests: 0,
+          details: { newGuests: [], doNotContact: [] },
+        })
+        .returning({ id: bookingImports.id });
+      const newIds = await this.insertNewGuests(tx, plan, saved.id);
       const resolve = (g: GuestRef) => ('id' in g ? g.id : newIds[g.newKey]);
       await this.addContactMethods(tx, plan);
       const optedIn = await this.recordConsents(tx, plan, newIds);
@@ -125,19 +139,10 @@ export class BookingImportService {
         leadsBooked: leadsBooked.map((l) => ({ id: l.leadId, name: l.name })),
       };
       const counts = countOutcomes(plan.rows);
-      const [saved] = await tx
-        .insert(bookingImports)
-        .values({
-          fileName: input.fileName,
-          propertyId: input.propertyId || null,
-          rowsTotal: input.rows.length,
-          added,
-          updated,
-          skipped: counts.error + counts.skipped,
-          newGuests: plan.newGuests.length,
-          details,
-        })
-        .returning({ id: bookingImports.id });
+      await tx
+        .update(bookingImports)
+        .set({ added, updated, skipped: counts.error + counts.skipped, newGuests: plan.newGuests.length, details })
+        .where(eq(bookingImports.id, saved.id));
 
       return { id: saved.id, added, updated, skipped: counts.error + counts.skipped, ...details, rows: plan.rows };
     });
@@ -291,7 +296,7 @@ export class BookingImportService {
   // first name, country from the booking or the phone, market from the
   // country, the email and phone as primary (unverified), consent unknown.
   // Ids are reserved first so the stays can point at them in one insert.
-  private async insertNewGuests(tx: Transaction, plan: ImportPlan): Promise<number[]> {
+  private async insertNewGuests(tx: Transaction, plan: ImportPlan, importId: number): Promise<number[]> {
     if (!plan.newGuests.length) return [];
     const { rows } = await tx.execute<{ id: string }>(
       sql`select nextval(pg_get_serial_sequence('contacts', 'id')) as id from generate_series(1, ${plan.newGuests.length})`,
@@ -307,6 +312,8 @@ export class BookingImportService {
           lifecycleStage: 'lead' as const, // moves to stayed on check-out
           market: g.market,
           countryCode: g.countryCode,
+          addedVia: 'stay_import' as const,
+          addedViaBookingImportId: importId,
         })),
       );
     }
@@ -411,4 +418,3 @@ function countOutcomes(rows: PlannedRow[]) {
   for (const r of rows) counts[r.outcome]++;
   return counts;
 }
-

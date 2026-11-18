@@ -11,4 +11,5 @@ export * from './sales.js';
 export * from './data-issues.js';
 export * from './imports.js';
 export * from './marketing.js';
+export * from './mailchimp.js';
 export * from './views.js';

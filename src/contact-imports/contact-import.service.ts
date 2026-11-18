@@ -141,7 +141,7 @@ export class ContactImportService {
 
       const companyIds = await this.insertCompanies(tx, plan);
       const companyOf = (ref: CompanyRef | null) => (ref ? ('id' in ref ? ref.id : companyIds[ref.newKey]) : null);
-      const newIds = await this.insertContacts(tx, plan.creates, companyOf);
+      const newIds = await this.insertContacts(tx, plan.creates, companyOf, saved.id);
       await this.applyUpdates(tx, plan.updates, companyOf);
 
       // consent follows the file, with the import as source and evidence
@@ -388,14 +388,27 @@ export class ContactImportService {
   // New and added-again contacts, as one added in the app would be: emails and
   // phones unverified, consent rows unknown until the file's choices are
   // recorded. Ids are reserved first so the emails and phones can point at them.
-  private async insertContacts(tx: Transaction, creates: ContactCreate[], companyOf: (ref: CompanyRef | null) => number | null) {
+  private async insertContacts(
+    tx: Transaction,
+    creates: ContactCreate[],
+    companyOf: (ref: CompanyRef | null) => number | null,
+    importId: number, // this import: their "Added via"
+  ) {
     if (!creates.length) return [];
     const { rows } = await tx.execute<{ id: string }>(
       sql`select nextval(pg_get_serial_sequence('contacts', 'id')) as id from generate_series(1, ${creates.length})`,
     );
     const ids = rows.map((r) => Number(r.id));
     for (const part of chunks(creates.map((c, i) => ({ c, id: ids[i] })))) {
-      await tx.insert(contacts).values(part.map(({ c, id }) => ({ id, ...c.contact, companyId: companyOf(c.company) })));
+      await tx.insert(contacts).values(
+        part.map(({ c, id }) => ({
+          id,
+          ...c.contact,
+          companyId: companyOf(c.company),
+          addedVia: 'contact_import' as const,
+          addedViaContactImportId: importId,
+        })),
+      );
     }
     const methods = creates.flatMap((c, i) => c.methods.map((m) => ({ contactId: ids[i], ...m })));
     for (const part of chunks(methods)) await tx.insert(contactMethods).values(part);
