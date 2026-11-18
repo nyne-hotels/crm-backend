@@ -9,7 +9,13 @@ import {
   reorderOccasionsSchema,
   updateOccasionSchema,
 } from './occasions/occasions.service.js';
-import { PropertiesService, updatePropertySchema, type UpdateProperty } from './properties/properties.service.js';
+import {
+  createPropertySchema,
+  PropertiesService,
+  updatePropertySchema,
+  type CreateProperty,
+  type UpdateProperty,
+} from './properties/properties.service.js';
 import { createTagSchema, TagsService, updateTagSchema } from './tags/tags.service.js';
 
 @Controller('settings/properties')
@@ -20,6 +26,11 @@ export class PropertiesController {
   @Get()
   list() {
     return this.properties.list();
+  }
+
+  @Post()
+  create(@Body(new ZodValidationPipe(createPropertySchema)) body: CreateProperty) {
+    return this.properties.create(body);
   }
 
   @Patch(':id')
